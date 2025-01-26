@@ -1,21 +1,52 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import "@fontsource/inter";
+@import "@fontsource/fragment-mono";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --background: #1a1c16;
+  --foreground: #f3fae9;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --card: #21231e;
+  --card-foreground: #f3fae9;
+
+  --popover: #21231e;
+  --popover-foreground: #f3fae9;
+
+  --primary: #74b218;
+  --primary-foreground: #434a38;
+
+  --secondary: #21231e;
+  --secondary-foreground: #abb2a1;
+
+  --muted: #1d1e1b;
+  --muted-foreground: #434a38;
+
+  --accent: #393b35;
+  --accent-foreground: #f3fae9;
+
+  --destructive: #ff0000;
+  --destructive-foreground: #f3fae9;
+
+  --border: #434a38;
+  --border-secondary: #252821;
+  --input: #434a38;
+  --ring: #48c0f8;
+
+  --radius: 0.625rem;
+
+  /* colors */
+  --color-blue-primary: #48c0f8;
+  --color-blue-secondary: #0b6583;
+  --color-orange-primary: #d38633;
+  --color-orange-secondary: #7a4a1d;
+  --color-green-primary: #74b218;
+  --color-green-secondary: #434a38;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", sans-serif;
 }
