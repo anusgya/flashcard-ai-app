@@ -42,7 +42,7 @@ export default function CardDetailPage({ params }: PageProps) {
   return (
     <div className="h-screen pt-3 px-12">
       <div className="mb-8 ">
-        <Link href={`/decks/${params.deckId}`}>
+        <Link href={`/decks/${params.deckId}/cards`}>
           <Button
             variant="outline"
             size="icon"

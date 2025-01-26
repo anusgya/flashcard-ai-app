@@ -11,7 +11,7 @@ interface CardListItemProps {
 export function CardListItem({ number, question, answer }: CardListItemProps) {
   return (
     <Link
-      href="/decks/1/card/1"
+      href="/decks/1/cards/1"
       className="flex items-center justify-between px-6 py-3 rounded-lg border border-border hover:bg-secondary border-b-[3px] cursor-pointer transition-colors"
     >
       <div className="space-y-1">

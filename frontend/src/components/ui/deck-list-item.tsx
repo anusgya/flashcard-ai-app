@@ -19,7 +19,7 @@ export function DeckListItem({
 }: DeckListItemProps) {
   return (
     <Link
-      href="/decks/1"
+      href="/decks/1/cards"
       className="flex items-center justify-between px-6 py-3 rounded-lg border border-border hover:bg-secondary border-b-[3px] cursor-pointer transition-colors"
     >
       {/* <div className="flex items-center justify-between px-6 py-3 rounded-lg border border-border  hover:bg-secondary border-b-[3px] cursor-pointer transition-colors"> */}

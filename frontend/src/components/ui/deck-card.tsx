@@ -1,3 +1,6 @@
+"use client";
+
+import Link from "next/link";
 interface DeckCardProps {
   title: string;
   progress: number;
@@ -15,29 +18,33 @@ export function DeckCard({ title, progress, cardsCount }: DeckCardProps) {
     progressColors[Math.floor(Math.random() * progressColors.length)];
 
   return (
-    <div className="px-6 py-4 rounded-lg border border-border border-b-[3px] hover:bg-secondary transition-colors cursor-pointer">
-      <div className="space-y-2">
-        <div className="flex flex-col gap-1.5">
-          <h3 className="text-lg font-medium text-card-foreground">{title}</h3>
-          <div className="text-sm text-secondary-foreground ">
-            {cardsCount} cards mastered
+    <Link href="/learn/1">
+      <div className="px-6 py-4 rounded-lg border border-border border-b-[3px] hover:bg-secondary transition-colors cursor-pointer">
+        <div className="space-y-2">
+          <div className="flex flex-col gap-1.5">
+            <h3 className="text-lg font-medium text-card-foreground">
+              {title}
+            </h3>
+            <div className="text-sm text-secondary-foreground font-fragment-mono ">
+              {cardsCount} cards mastered
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <div
-            className={`flex-1 h-2 rounded-full ${randomColorPair.bgSecondary} overflow-hidden`}
-          >
+          <div className="flex items-center gap-2">
             <div
-              className={`h-full ${randomColorPair.bg} rounded-full transition-all duration-500`}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <div className="text-sm text-secondary-foreground min-w-[45px] text-right">
-            {progress}%
+              className={`flex-1 h-2 rounded-full ${randomColorPair.bgSecondary} overflow-hidden`}
+            >
+              <div
+                className={`h-full ${randomColorPair.bg} rounded-full transition-all duration-500`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <div className="text-sm text-secondary-foreground min-w-[45px] text-right">
+              {progress}%
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

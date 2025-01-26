@@ -54,7 +54,7 @@ export default function RootLayout({
                   "flex items-center gap-3 px-4 py-2 rounded-lg text-foreground transition-colors",
                   "hover:bg-secondary",
                   isActiveRoute(item.href) &&
-                    "bg-secondary text-foreground border-[1.5px] border-border"
+                    "bg-secondary text-primary-green font-bold border-[1.5px] border-border"
                 )}
               >
                 <span className="text-2xl">{item.icon}</span>

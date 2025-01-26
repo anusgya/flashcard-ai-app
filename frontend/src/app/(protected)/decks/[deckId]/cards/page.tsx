@@ -66,10 +66,15 @@ export default function CardsPage({ params }: PageProps) {
         {/* Added consistent spacing */}
         {/* Action Buttons */}
         <div className="flex gap-2">
-          <Button className="bg-primary-green text-muted font-semibold hover:bg-primary-green/90">
-            <Plus className="h-4 w-4 " />
-            Add Note
-          </Button>
+          <Link
+            href="/decks/[deckId]/cards/add"
+            as={`/decks/${params.deckId}/cards/add`}
+          >
+            <Button className="bg-primary-green text-muted font-semibold hover:bg-primary-green/90">
+              <Plus className="h-4 w-4 " />
+              Add Note
+            </Button>
+          </Link>
           <Button
             variant="outline"
             className="text-secondary-foreground border-b-1 bg-secondary border-divider hover:text-foreground "

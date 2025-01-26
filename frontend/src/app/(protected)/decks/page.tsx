@@ -2,6 +2,9 @@ import { Plus, Upload, Download, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DeckListItem } from "@/components/ui/deck-list-item";
+import { CreateDeckModal } from "@/components/ui/create-deck-modal";
+import { UploadModal } from "@/components/ui/upload-modal";
+import { ImportModal } from "@/components/ui/import-modal";
 
 export default function DecksPage() {
   // Sample data - in a real app, this would come from your database
@@ -35,18 +38,9 @@ export default function DecksPage() {
       <div className="space-y-8">
         {/* Action Buttons */}
         <div className="flex gap-2 ">
-          <Button className="bg-primary-green text-muted font-semibold hover:bg-primary-green/90">
-            <Plus className="h-4 w-4" />
-            Create
-          </Button>
-          <Button className="bg-primary-blue text-muted font-semibold border-primary-blue-secondary hover:bg-primary-blue/90">
-            <Upload className="h-4 w-4" />
-            Upload
-          </Button>
-          <Button className="bg-primary-orange text-muted font-semibold border-primary-orange-secondary hover:bg-primary-orange/90">
-            <Download className=" h-4 w-4" />
-            Import
-          </Button>
+          <CreateDeckModal />
+          <UploadModal />
+          <ImportModal />
         </div>
 
         {/* <div className="h-[1px] w-full bg-muted-foreground"></div> */}
