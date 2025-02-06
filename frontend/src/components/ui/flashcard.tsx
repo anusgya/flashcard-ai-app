@@ -5,6 +5,7 @@ import { ArrowLeft, Pencil, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Link from "next/link";
 
 interface FlashcardProps {
   question: string;
@@ -37,26 +38,28 @@ export function Flashcard({
   };
 
   const handleAudioPlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
+    // if (audioRef.current) {
+    //   if (isPlaying) {
+    //     audioRef.current.pause();
+    //   } else {
+    //     audioRef.current.play();
+    //   }
+    //   setIsPlaying(!isPlaying);
+    // }
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background py-3 px-12">
       {/* Top navigation */}
-      <Button
-        variant="ghost"
-        className="p-2 hover:bg-transparent absolute top-4 left-4"
-        onClick={() => router.back()}
-      >
-        <ArrowLeft className="h-6 w-6" />
-      </Button>
+      <Link href="/learn/" className="">
+        <Button
+          variant="outline"
+          size="icon"
+          className="text-secondary-foreground border mb-4 border-divider rounded-full hover:text-foreground"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+      </Link>
 
       {/* Card stack container */}
       <div className="flex-1 flex justify-center px-4 py-2 mt-16">
@@ -225,9 +228,9 @@ export function Flashcard({
                     )}
                   </Tabs>
 
-                  {audioUrl && (
-                    <audio ref={audioRef} src={audioUrl} className="hidden" />
-                  )}
+                  {/* {audioUrl && (
+                    <audio ref={" "} src={audioUrl} className="hidden" />
+                  )} */}
                 </div>
               </div>
             </div>

@@ -29,18 +29,25 @@ export default function LearnPage() {
     //   onEdit={handleEdit}
     //   onAnswer={handleAnswer}
     // />
-    <Flashcard
-      question="What is biology?"
-      answer="Biology is the study of living organisms..."
-      mnemonics="Big Ideas Of Life Organized Genetically Yearly"
-      examples={[
-        "Cell Theory - Example: The human body is made up of trillions of cells...",
-        "Another example...",
-      ]}
-      imageUrl="/path-to-image.jpg"
-      audioUrl="/path-to-audio.mp3"
-      onEdit={() => {}}
-      onAnswer={(difficulty) => {}}
-    />
+    <div className="flex flex-col h-screen">
+      {/* <div className="flex gap-4 font-fragment-mono">
+        <span className="text-primary-blue">new: 1</span>
+        <span className="text-primary-orange">due: 1</span>
+        <span className="text-primary-green">learn: 1</span>
+      </div> */}
+      <Flashcard
+        question="What is biology?"
+        answer="Biology is the study of living organisms..."
+        mnemonics="Big Ideas Of Life Organized Genetically Yearly"
+        examples={[
+          "Cell Theory - Example: The human body is made up of trillions of cells...",
+          "Another example...",
+        ]}
+        imageUrl="/path-to-image.jpg"
+        audioUrl="/path-to-audio.mp3"
+        onEdit={() => {}}
+        onAnswer={(difficulty) => {}}
+      />
+    </div>
   );
 }

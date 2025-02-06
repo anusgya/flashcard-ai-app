@@ -23,7 +23,9 @@ const InfoBox = ({
 }) => (
   <div className="bg-background rounded-lg border border-divider">
     <div className="p-4 border-b border-divider flex items-center justify-between">
-      <h2 className="text-xl font-semibold text-foreground">{title}</h2>
+      <h2 className="text-lg font-semibold text-secondary-foreground">
+        {title}
+      </h2>
       {onClose && (
         <Button
           variant="ghost"
@@ -64,8 +66,8 @@ export default function CardDetailPage({ params }: PageProps) {
               </h1>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Button
-                  variant="ghost"
-                  className="text-primary-blue hover:text-primary-blue/90 font-inter text-xs whitespace-nowrap"
+                  variant="outline"
+                  className="text-purple-300 border-b-3  rounded-full hover:text-primary-blue/90 text-xs"
                 >
                   get cheat code
                 </Button>
@@ -91,25 +93,25 @@ export default function CardDetailPage({ params }: PageProps) {
             <InfoBox title="Mnemonic device" onClose={() => {}}>
               <div className="space-y-1">
                 <p>
-                  <span className="text-primary-blue">B</span>ig
+                  <span className="">B</span>ig
                 </p>
                 <p>
-                  <span className="text-primary-blue">I</span>deas
+                  <span className="">I</span>deas
                 </p>
                 <p>
-                  <span className="text-primary-blue">O</span>f
+                  <span className="">O</span>f
                 </p>
                 <p>
-                  <span className="text-primary-blue">L</span>ife
+                  <span className="">L</span>ife
                 </p>
                 <p>
-                  <span className="text-primary-blue">O</span>rganized
+                  <span className="">O</span>rganized
                 </p>
                 <p>
-                  <span className="text-primary-blue">G</span>enetically
+                  <span className="">G</span>enetically
                 </p>
                 <p>
-                  <span className="text-primary-blue">Y</span>early
+                  <span className="">Y</span>early
                 </p>
               </div>
             </InfoBox>

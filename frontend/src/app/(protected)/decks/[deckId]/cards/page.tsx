@@ -1,4 +1,11 @@
-import { ArrowLeft, Plus, Filter, ArrowUpDown, Search } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  Filter,
+  ArrowUpDown,
+  Search,
+  BookCheck,
+} from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +42,7 @@ export default function CardsPage({ params }: PageProps) {
   ];
 
   return (
-    <div className="py-3 px-12 ">
+    <div className="py-3 px-12">
       <Link href="/decks">
         <Button
           variant="outline"
@@ -65,30 +72,40 @@ export default function CardsPage({ params }: PageProps) {
         {" "}
         {/* Added consistent spacing */}
         {/* Action Buttons */}
-        <div className="flex gap-2">
-          <Link
-            href="/decks/[deckId]/cards/add"
-            as={`/decks/${params.deckId}/cards/add`}
-          >
-            <Button className="bg-primary-green text-muted font-semibold hover:bg-primary-green/90">
-              <Plus className="h-4 w-4 " />
-              Add Note
+        <div className="flex justify-between gap-2">
+          <div className="flex gap-2">
+            <Link
+              href="/decks/[deckId]/cards/add"
+              as={`/decks/${params.deckId}/cards/add`}
+            >
+              <Button className="bg-primary-green hover:border-0 text-muted font-semibold hover:bg-primary-green/90">
+                <Plus className="h-4 w-4 " />
+                Add Note
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              className="text-secondary-foreground border-b-1 bg-secondary border-divider hover:text-foreground "
+            >
+              <Filter className="h-4 w-4" />
+              Filter
             </Button>
-          </Link>
-          <Button
-            variant="outline"
-            className="text-secondary-foreground border-b-1 bg-secondary border-divider hover:text-foreground "
-          >
-            <Filter className="h-4 w-4" />
-            Filter
-          </Button>
-          <Button
-            variant="outline"
-            className="text-secondary-foreground border-b-1 bg-secondary border-divider hover:text-foreground"
-          >
-            <ArrowUpDown className="h-4 w-4 " />
-            Sort
-          </Button>
+            <Button
+              variant="outline"
+              className="text-secondary-foreground border-b-1 bg-secondary border-divider hover:text-foreground"
+            >
+              <ArrowUpDown className="h-4 w-4 " />
+              Sort
+            </Button>
+          </div>
+          <div>
+            <Link href="/learn/1">
+              <Button className="bg-primary-orange hover:border-0 text-muted font-semibold border-primary-orange-secondary">
+                <BookCheck className="h-4 w-4" />
+                Study Now
+              </Button>
+            </Link>
+          </div>
         </div>
         {/* Cards List */}
         <div className="space-y-4">

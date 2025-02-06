@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
+import Link from "next/link";
 import {
   Select,
   SelectContent,
@@ -27,32 +28,32 @@ export default function AddNotePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+    <div className="min-h-screen  bg-background flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none" />
-      <div className="p-4 z-10">
+      <Link href="/decks/1/cards" className="pt-3 px-12">
         <Button
-          variant="ghost"
-          className="p-0 hover:bg-transparent -ml-1"
-          onClick={() => router.push("/decks/1/cards")}
+          variant="outline"
+          size="icon"
+          className="text-secondary-foreground border mb-4 border-divider rounded-full hover:text-foreground"
         >
-          <ArrowLeft className="h-6 w-6" />
+          <ArrowLeft className="h-5 w-5" />
         </Button>
-      </div>
-      <form
-        onSubmit={handleSubmit}
-        className="flex-1 flex flex-col p-4 pt-0 z-10"
-      >
+      </Link>
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col z-10">
         <div className="max-w-3xl w-full mx-auto flex-1 flex flex-col space-y-8">
-          <Select value={selectedDeck} onValueChange={setSelectedDeck}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a deck" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">JavaScript Basics</SelectItem>
-              <SelectItem value="2">React Fundamentals</SelectItem>
-              <SelectItem value="3">CSS Tricks</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-3">
+            <div className="text-secondary-foreground text-sm"> Deck:</div>
+            <Select value={selectedDeck} onValueChange={setSelectedDeck}>
+              <SelectTrigger className="w-full bg-secondary border-2 border-divider text-secondary-foreground">
+                <SelectValue placeholder="Select a deck" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">JavaScript Basics</SelectItem>
+                <SelectItem value="2">React Fundamentals</SelectItem>
+                <SelectItem value="3">CSS Tricks</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-secondary-foreground">
@@ -104,18 +105,18 @@ export default function AddNotePage() {
           </div>
         </div>
 
-        <div className="flex gap-4 mt-4 max-w-3xl w-full mx-auto">
+        <div className="flex gap-4 mt-12 mb-12 max-w-3xl w-full mx-auto">
           <Button
             type="button"
             variant="outline"
-            className="flex-1 border-divider hover:bg-muted"
+            className="flex-1 border-border hover:bg-muted"
             onClick={() => router.back()}
           >
             Close
           </Button>
           <Button
             type="submit"
-            className="flex-1 bg-primary-green hover:bg-primary-green/90"
+            className="flex-1 bg-primary-green text-muted font-semibold hover:bg-primary-green/90"
           >
             Save
           </Button>

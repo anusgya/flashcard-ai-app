@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
+
 interface DeckCardProps {
   title: string;
   progress: number;
@@ -8,9 +10,9 @@ interface DeckCardProps {
 }
 
 const progressColors = [
-  { bg: "bg-primary-blue", bgSecondary: "bg-primary-blue-secondary" },
-  { bg: "bg-primary-orange", bgSecondary: "bg-primary-orange-secondary" },
-  { bg: "bg-primary-green", bgSecondary: "bg-primary-green-secondary" },
+  { bg: "bg-primary-blue", bgSecondary: "bg-primary-blue/20" },
+  { bg: "bg-primary-orange", bgSecondary: "bg-primary-orange/20" },
+  { bg: "bg-primary-green", bgSecondary: "bg-primary-green/20" },
 ];
 
 export function DeckCard({ title, progress, cardsCount }: DeckCardProps) {
@@ -19,24 +21,22 @@ export function DeckCard({ title, progress, cardsCount }: DeckCardProps) {
 
   return (
     <Link href="/learn/1">
-      <div className="px-6 py-4 rounded-lg border border-border border-b-[3px] hover:bg-secondary transition-colors cursor-pointer">
+      <div className="p-6 rounded-lg border border-border hover:border-primary-green/50 transition-colors cursor-pointers hover:bg-secondary">
         <div className="space-y-2">
-          <div className="flex flex-col gap-1.5">
-            <h3 className="text-lg font-medium text-card-foreground">
-              {title}
-            </h3>
-            <div className="text-sm text-secondary-foreground font-fragment-mono ">
+          <div className="space-y-1">
+            <h3 className="text-md font-medium text-foreground">{title}</h3>
+            <p className="text-sm text-secondary-foreground font-fragment-mono">
               {cardsCount} cards mastered
-            </div>
+            </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <div
-              className={`flex-1 h-2 rounded-full ${randomColorPair.bgSecondary} overflow-hidden`}
-            >
-              <div
-                className={`h-full ${randomColorPair.bg} rounded-full transition-all duration-500`}
-                style={{ width: `${progress}%` }}
+            <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+              <motion.div
+                className={`h-full ${randomColorPair.bg} rounded-full`}
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.5, delay: 0.2 }}
               />
             </div>
             <div className="text-sm text-secondary-foreground min-w-[45px] text-right">

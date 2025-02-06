@@ -23,7 +23,7 @@ export function CardListItem({ number, question, answer }: CardListItemProps) {
       <div className="flex items-center gap-6">
         <Button
           variant="outline"
-          className="text-primary-blue border-b-1 rounded-full hover:text-primary-blue/90 text-xs"
+          className="text-purple-300 border-b-3  rounded-full hover:text-primary-blue/90 text-xs"
         >
           get cheat code
         </Button>

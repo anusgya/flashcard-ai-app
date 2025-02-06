@@ -13,8 +13,9 @@ const navItems: NavItem[] = [
   { icon: "📖", label: "Decks", href: "/decks" },
   { icon: "🧠", label: "Learn", href: "/learn" },
   { icon: "🔥", label: "Play Quiz", href: "/quiz" },
-  { icon: "✅", label: "View Progress", href: "/progress" },
-  { icon: "🏆", label: "Leaderboard", href: "/leaderboard" },
+  { icon: "✅", label: "Analytics", href: "/progress" },
+  { icon: "🏆", label: "Achievements", href: "/achievements" },
+  { icon: "👑", label: "Leaderboard", href: "/leaderboard" },
   { icon: "⚙️", label: "Settings", href: "/settings" },
 ];
 
@@ -54,10 +55,10 @@ export default function RootLayout({
                   "flex items-center gap-3 px-4 py-2 rounded-lg text-foreground transition-colors",
                   "hover:bg-secondary",
                   isActiveRoute(item.href) &&
-                    "bg-secondary text-primary-green font-bold border-[1.5px] border-border"
+                    "bg-secondary text-primary-green  border-[1.5px] border-border"
                 )}
               >
-                <span className="text-2xl">{item.icon}</span>
+                <span className="text-2xl ">{item.icon}</span>
                 <span className="text-sm">{item.label}</span>
               </a>
             ))}

@@ -1,10 +1,11 @@
 import { BookOpen, PenSquare, Brain } from "lucide-react";
 import { ActionCard } from "@/components/ui/action-card";
 import { DeckCard } from "@/components/ui/deck-card";
+import ActivityHeatmap from "@/components/activity-heatmap";
 
 export default function Dashboard() {
   return (
-    <div className="py-16 px-12 space-y-6">
+    <div className="py-16 px-12 space-y-12">
       {/* Header */}
       <div className="flex justify-between gap-6 items-start">
         <div className="space-y-2">
@@ -28,7 +29,7 @@ export default function Dashboard() {
       </div>
 
       {/* Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 py-8 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <ActionCard
           icon={
             <span className="w-10 h-10 flex items-center p-2 bg-primary-green justify-center rounded-[10px] bg-primary-green/20 text-primary-green text-2xl">
@@ -69,6 +70,12 @@ export default function Dashboard() {
           <DeckCard title="Biology" progress={75} cardsCount={10} />
           <DeckCard title="Biology" progress={75} cardsCount={10} />
         </div>
+      </div>
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">
+          Activity Heatmap
+        </h2>
+        <ActivityHeatmap />
       </div>
     </div>
   );
