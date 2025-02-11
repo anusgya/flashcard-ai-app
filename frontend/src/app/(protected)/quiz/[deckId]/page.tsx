@@ -129,7 +129,7 @@ export default function QuizPage() {
             className="w-full max-w-2xl space-y-12"
           >
             <motion.h1
-              className="text-3xl md:text-4xl text-foreground text-center font-bold"
+              className="text-2xl md:text-2xl text-foreground font-bold"
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 200, damping: 10 }}
@@ -152,19 +152,26 @@ export default function QuizPage() {
                 />
               ))}
             </div>
-
-            <div className="flex justify-center">
-              <Button
-                onClick={handleCheck}
-                disabled={selectedAnswer === null}
-                style={{ backgroundColor: currentColor }}
-                className="text-background font-fragment-mono px-12 py-6 text-xl h-auto rounded-full shadow-lg hover:shadow-xl transition-all"
-              >
-                {isAnswerRevealed ? "Next Question" : "Check Answer"}
-              </Button>
-            </div>
           </motion.div>
         </AnimatePresence>
+      </div>
+      <div className="w-full flex justify-between">
+        <Button
+          onClick={handleCheck}
+          disabled={selectedAnswer === null}
+          style={{ backgroundColor: currentColor }}
+          className="text-background font-semibold px-4 py-2 text-md h-auto  shadow-lg hover:shadow-xl transition-all"
+        >
+          {isAnswerRevealed ? "Next Question" : "Check Answer"}
+        </Button>
+        <Button
+          onClick={handleCheck}
+          disabled={selectedAnswer === null}
+          style={{ backgroundColor: currentColor }}
+          className="text-background font-semibold px-4 py-2 text-md h-auto  shadow-lg hover:shadow-xl transition-all"
+        >
+          {isAnswerRevealed ? "Next Question" : "Check Answer"}
+        </Button>
       </div>
 
       <AnimatePresence>

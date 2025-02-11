@@ -24,7 +24,7 @@ export function AnswerButton({
     <motion.button
       onClick={onClick}
       className={cn(
-        "w-full p-6 rounded-lg border-2 text-left font-fragment-mono",
+        "w-full px-4 py-2 rounded-lg border-2 text-left font-fragment-mono",
         "hover:border-primary-green/50 transition-colors",
         "disabled:cursor-not-allowed flex items-center space-x-4",
         isSelected && !isRevealed && "border-primary-blue bg-primary-blue/10",
