@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 interface DeckCardProps {
+  id:string;
   title: string;
   progress: number;
   cardsCount: number;
@@ -15,12 +16,12 @@ const progressColors = [
   { bg: "bg-primary-green", bgSecondary: "bg-primary-green/20" },
 ];
 
-export function DeckCard({ title, progress, cardsCount }: DeckCardProps) {
+export function DeckCard({ id, title, progress, cardsCount }: DeckCardProps) {
   const randomColorPair =
     progressColors[Math.floor(Math.random() * progressColors.length)];
 
   return (
-    <Link href="/learn/1">
+    <Link href={`/learn/${id}`}>
       <div className="p-6 rounded-lg border border-border hover:border-primary-green/50 transition-colors cursor-pointers hover:bg-secondary">
         <div className="space-y-2">
           <div className="space-y-1">

@@ -1,51 +1,87 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft, Pencil, Play } from "lucide-react";
+import { useState, useRef } from "react";
+import { ArrowLeft, Pencil, Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
+import Image from "next/image";
 
-interface FlashcardProps {
+export interface FlashcardProps {
   question: string;
   answer: string;
   mnemonics?: string;
   examples?: string[];
-  imageUrl?: string;
-  audioUrl?: string;
+  frontImageUrl?: string;
+  frontAudioUrl?: string;
+  backImageUrl?: string;
+  backAudioUrl?: string;
   onEdit?: () => void;
   onAnswer?: (difficulty: "again" | "hard" | "good" | "perfect") => void;
 }
 
-export function Flashcard({
-  question,
-  answer,
-  mnemonics,
-  examples,
-  imageUrl,
-  audioUrl,
-  onEdit,
-  onAnswer,
-}: FlashcardProps) {
+export function Flashcard(props: FlashcardProps) {
+  // Destructure props here
+  const {
+    question,
+    answer,
+    mnemonics,
+    examples,
+    frontImageUrl,
+    frontAudioUrl,
+    backImageUrl,
+    backAudioUrl,
+    onEdit,
+    onAnswer,
+  } = props;
+
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isFrontAudioPlaying, setIsFrontAudioPlaying] = useState(false);
+  const [isBackAudioPlaying, setIsBackAudioPlaying] = useState(false);
   const router = useRouter();
-  const audioRef = useState<HTMLAudioElement | null>(null);
+  const frontAudioRef = useRef<HTMLAudioElement | null>(null);
+  const backAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
+    
+    // Pause any playing audio when flipping the card
+    if (frontAudioRef.current && isFrontAudioPlaying) {
+      frontAudioRef.current.pause();
+      setIsFrontAudioPlaying(false);
+    }
+    
+    if (backAudioRef.current && isBackAudioPlaying) {
+      backAudioRef.current.pause();
+      setIsBackAudioPlaying(false);
+    }
   };
 
-  const handleAudioPlay = () => {
-    // if (audioRef.current) {
-    //   if (isPlaying) {
-    //     audioRef.current.pause();
-    //   } else {
-    //     audioRef.current.play();
-    //   }
-    //   setIsPlaying(!isPlaying);
-    // }
+  const handleFrontAudioPlay = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card flip
+    
+    if (frontAudioRef.current) {
+      if (isFrontAudioPlaying) {
+        frontAudioRef.current.pause();
+      } else {
+        frontAudioRef.current.play();
+      }
+      setIsFrontAudioPlaying(!isFrontAudioPlaying);
+    }
+  };
+
+  const handleBackAudioPlay = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card flip
+    
+    if (backAudioRef.current) {
+      if (isBackAudioPlaying) {
+        backAudioRef.current.pause();
+      } else {
+        backAudioRef.current.play();
+      }
+      setIsBackAudioPlaying(!isBackAudioPlaying);
+    }
   };
 
   return (
@@ -77,43 +113,6 @@ export function Flashcard({
                 onClick={handleFlip}
               >
                 <div className="p-8 rounded-lg border border-border bg-muted h-full flex flex-col">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-4 top-4"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit?.();
-                    }}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <div className="flex-1 flex items-center justify-center text-center text-lg">
-                    {question}
-                  </div>
-                  {audioUrl && (
-                    <div className="absolute bottom-4 right-4">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAudioPlay();
-                        }}
-                      >
-                        <Play className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Back of card */}
-              <div
-                className="absolute inset-0 [transform:rotateY(180deg)] [backface-visibility:hidden]"
-                onClick={(e) => e.stopPropagation()} // Prevent flip when clicking the back content
-              >
-                <div className="p-4 rounded-lg border flex flex-col gap-4 border-border bg-muted h-full">
                   {/* <Button
                     variant="ghost"
                     size="icon"
@@ -125,18 +124,69 @@ export function Flashcard({
                   >
                     <Pencil className="h-4 w-4" />
                   </Button> */}
+                  
+                  <div className="flex-1 flex flex-col items-center justify-center text-center text-lg gap-6 overflow-y-auto">
+                    {question}
+                    
+                    {/* Front image */}
+                    {frontImageUrl && (
+                      <div className="mt-4 w-full max-w-md mx-auto">
+                        <div className="border border-divider rounded-md overflow-hidden">
+                          <Image 
+                            src={frontImageUrl}
+                            alt="Question image"
+                            width={500}
+                            height={300}
+                            className="object-contain w-full max-h-[400px]"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Front audio control */}
+                  {frontAudioUrl && (
+                    <div className="absolute bottom-4 right-4">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleFrontAudioPlay}
+                      >
+                        {isFrontAudioPlaying ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <audio 
+                        ref={frontAudioRef} 
+                        src={frontAudioUrl} 
+                        onEnded={() => setIsFrontAudioPlaying(false)}
+                        className="hidden" 
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Back of card */}
+              <div
+                className="absolute inset-0 [transform:rotateY(180deg)] [backface-visibility:hidden]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-4 rounded-lg border flex flex-col gap-4 border-border bg-muted h-full overflow-hidden">
                   <div className="">
-                    <Button
+                    {/* <Button
                       variant="ghost"
                       size="icon"
-                      className="text-secondary-foreground"
+                      className="absolute right-4 top-4"
                       onClick={(e) => {
                         e.stopPropagation();
                         onEdit?.();
                       }}
                     >
                       <Pencil className="h-4 w-4" />
-                    </Button>
+                    </Button> */}
                     <Button
                       variant={"ghost"}
                       onClick={(e) => {
@@ -149,9 +199,8 @@ export function Flashcard({
                     </Button>
                   </div>
 
-                  <Tabs defaultValue="answer" className="h-full">
+                  <Tabs defaultValue="answer" className="h-full overflow-hidden flex flex-col">
                     <div onClick={(e) => e.stopPropagation()}>
-                      {" "}
                       <TabsList className="grid w-full grid-cols-4 text-secondary-foreground border border-divider">
                         <TabsTrigger value="answer">Answer</TabsTrigger>
                         {mnemonics && (
@@ -160,7 +209,7 @@ export function Flashcard({
                         {examples && examples.length > 0 && (
                           <TabsTrigger value="examples">Examples</TabsTrigger>
                         )}
-                        {imageUrl && (
+                        {(backImageUrl || backAudioUrl) && (
                           <TabsTrigger value="media">Media</TabsTrigger>
                         )}
                       </TabsList>
@@ -209,28 +258,53 @@ export function Flashcard({
                       </TabsContent>
                     )}
 
-                    {imageUrl && (
+                    {(backImageUrl || backAudioUrl) && (
                       <TabsContent
                         value="media"
                         className="h-[calc(100%-50px)] overflow-auto"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="p-4 space-y-4">
-                          <div className="aspect-video relative rounded-lg overflow-hidden">
-                            <img
-                              src={imageUrl}
-                              alt="Card media"
-                              className="object-cover w-full h-full"
-                            />
-                          </div>
+                          {backImageUrl && (
+                            <div className="rounded-lg overflow-hidden">
+                              <Image
+                                src={backImageUrl}
+                                alt="Card media"
+                                width={500}
+                                height={300}
+                                className="object-contain w-full max-h-[400px]"
+                              />
+                            </div>
+                          )}
+                          
+                          {backAudioUrl && (
+                            <div className="mt-4 flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={handleBackAudioPlay}
+                              >
+                                {isBackAudioPlaying ? (
+                                  <Pause className="h-4 w-4" />
+                                ) : (
+                                  <Play className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <span className="text-sm text-secondary-foreground">
+                                Audio Recording
+                              </span>
+                              <audio 
+                                ref={backAudioRef} 
+                                src={backAudioUrl} 
+                                onEnded={() => setIsBackAudioPlaying(false)}
+                                className="hidden" 
+                              />
+                            </div>
+                          )}
                         </div>
                       </TabsContent>
                     )}
                   </Tabs>
-
-                  {/* {audioUrl && (
-                    <audio ref={" "} src={audioUrl} className="hidden" />
-                  )} */}
                 </div>
               </div>
             </div>
@@ -262,6 +336,7 @@ export function Flashcard({
                 onClick={(e) => {
                   e.stopPropagation();
                   onAnswer?.("again");
+                  setIsFlipped(false);
                 }}
               >
                 Again
@@ -272,6 +347,7 @@ export function Flashcard({
                 onClick={(e) => {
                   e.stopPropagation();
                   onAnswer?.("hard");
+                  setIsFlipped(false);
                 }}
               >
                 Hard
@@ -282,6 +358,7 @@ export function Flashcard({
                 onClick={(e) => {
                   e.stopPropagation();
                   onAnswer?.("good");
+                  setIsFlipped(false);
                 }}
               >
                 Good
@@ -292,6 +369,7 @@ export function Flashcard({
                 onClick={(e) => {
                   e.stopPropagation();
                   onAnswer?.("perfect");
+                  setIsFlipped(false);
                 }}
               >
                 Perfect

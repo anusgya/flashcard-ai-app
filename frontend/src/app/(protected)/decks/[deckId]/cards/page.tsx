@@ -1,3 +1,5 @@
+"use client"
+
 import {
   ArrowLeft,
   Plus,
@@ -10,36 +12,22 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CardListItem } from "@/components/ui/card-list-item";
+import { useCards } from "@/hooks/api/use-card";
+import { useParams } from "next/navigation";
+import { useDeck } from "@/hooks/api/use-deck";
 
-interface PageProps {
-  params: {
-    deckId: string;
-  };
-}
 
-export default function CardsPage({ params }: PageProps) {
-  const cards = [
-    {
-      number: 1,
-      question: "What is biology?",
-      answer: "Biology is this and biology is that and i love biology hehe ...",
-    },
-    {
-      number: 2,
-      question: "What is chemistry?",
-      answer: "Biology is this and biology is that and i love biology hehe ...",
-    },
-    {
-      number: 3,
-      question: "What is mathematics?",
-      answer: "Biology is this and biology is that and i love biology hehe ...",
-    },
-    {
-      number: 4,
-      question: "hehehehe?",
-      answer: "Biology is this and biology is that and i love biology hehe ...",
-    },
-  ];
+
+export default function CardsPage() {
+// const deckId = resolvedParams?.deckId;
+  // Fetch deck data using the useDeck hook
+  // Replace this with your actual logi
+
+  const params = useParams<{deckId:string}>()
+  
+  const {cards, isLoading, isError, mutate} = useCards(params.deckId);
+  console.log("these are the cards ", cards)
+  const {deck} = useDeck(params.deckId)
 
   return (
     <div className="py-3 px-12">
@@ -54,9 +42,9 @@ export default function CardsPage({ params }: PageProps) {
       </Link>
       <div className="flex justify-between items-end gap-6">
         <div className="space-y-2">
-          <h1 className="text-xl font-bold text-foreground">Biology</h1>
+          <h1 className="text-xl font-bold text-foreground">{deck?.name}</h1>
           <p className="text-secondary-foreground font-fragment-mono text-sm">
-            Anatomy maybe
+            {deck?.description}
           </p>
         </div>
         <div className="relative w-80 border-0 bg-secondary rounded-lg">
@@ -75,8 +63,8 @@ export default function CardsPage({ params }: PageProps) {
         <div className="flex justify-between gap-2">
           <div className="flex gap-2">
             <Link
-              href="/decks/[deckId]/cards/add"
-              as={`/decks/${params.deckId}/cards/add`}
+              href="/decks/addCard"
+              as={`/decks/addCard`}
             >
               <Button className="bg-primary-green hover:border-0 text-muted font-semibold hover:bg-primary-green/90">
                 <Plus className="h-4 w-4 " />
@@ -109,8 +97,8 @@ export default function CardsPage({ params }: PageProps) {
         </div>
         {/* Cards List */}
         <div className="space-y-4">
-          {cards.map((card) => (
-            <CardListItem key={card.number} {...card} />
+          {cards?.map((card:any) => (
+            <CardListItem key={card.id} {...card} onCardDelete={()=>mutate()} onCardEdit={()=>mutate()} />
           ))}
         </div>
       </div>

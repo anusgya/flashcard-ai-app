@@ -7,24 +7,11 @@ import { Sparkles } from "lucide-react";
 interface QuizCardProps {
   title: string;
   cardsCount: number;
-  color: "blue" | "green" | "orange";
 }
 
-export function QuizCard({ title, cardsCount, color }: QuizCardProps) {
-  const getColorClass = (color: string) => {
-    switch (color) {
-      case "blue":
-        return "primary-blue";
-      case "green":
-        return "primary-green";
-      case "orange":
-        return "primary-orange";
-      default:
-        return "primary-green";
-    }
-  };
-
-  const colorClass = getColorClass(color);
+export function QuizCard({ title, cardsCount }: QuizCardProps) {
+  const colors = ["primary-green", "primary-orange", "primary-blue"];
+  const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
   return (
     <Link href="/quiz/1">
@@ -36,7 +23,7 @@ export function QuizCard({ title, cardsCount, color }: QuizCardProps) {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-foreground">{title}</h3>
-            <Sparkles className={`w-6 h-6 text-${colorClass}`} />
+            <Sparkles className={`w-6 h-6 text-${randomColor}`} />
           </div>
           <div className="text-sm font-medium text-secondary-foreground font-fragment-mono">
             {cardsCount} cards

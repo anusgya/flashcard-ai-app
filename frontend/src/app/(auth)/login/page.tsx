@@ -3,15 +3,71 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast"
 
 export default function LoginPage() {
+  const { toast } = useToast()
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
+    setError("");
+    setIsLoading(true); 
+    
+    try {
+      console.log(email, password);
+      const response = await fetch("http://localhost:8000/auth/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          username: email,
+          password: password,
+        }),
+      });
+      
+      // Read the response body ONCE and store it
+      const data = await response.json();
+      
+      if (!response.ok) {
+        toast({
+          title: "Login failed",
+          description: data.detail || "Invalid credentials",
+          variant: "destructive",
+        });
+        // Don't throw an error here if you're handling it already
+        setError(data.detail || "Failed to login");
+      } else {
+        toast({
+          title: "Login successful",
+          variant: "default"
+        });
+        
+        // Store the token
+        localStorage.setItem("token", data.access_token);
+        
+        // Redirect to dashboard
+        router.push("/dashboard");
+      }
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Login failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
 
   return (
     <div className="min-h-screen w-full bg-background flex items-center justify-center p-4">
@@ -44,7 +100,7 @@ export default function LoginPage() {
 
           <Button
             type="submit"
-            onClick={() => (window.location.href = "/dashboard")}
+            // onClick={() => (window.location.href = "/dashboard")}
             className="w-full bg-primary-green text-primary-green-secondary font-semibold hover:bg-primary-green/90"
           >
             Login

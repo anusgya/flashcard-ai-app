@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-export function UploadModal() {
+export function UploadModal({onUploadComplete }: {onUploadComplete: () => void}) {
   const [isDragging, setIsDragging] = React.useState(false);
   const [file, setFile] = React.useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);

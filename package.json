@@ -3,6 +3,7 @@
     "@fontsource/fragment-mono": "^5.1.1",
     "@fontsource/inter": "^5.1.1",
     "canvas-confetti": "^1.9.3",
-    "motion": "^12.2.0"
+    "motion": "^12.2.0",
+    "swr": "^2.3.3"
   }
 }

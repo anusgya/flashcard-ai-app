@@ -1,15 +1,20 @@
-// app/leaderboard/page.tsx
-"use client";
+"use client"
 
-import { Avatar } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
+import { useState, useEffect, useRef } from "react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Trophy, Medal, Star, Crown, ChevronUp, Shield, Sparkles, Flame, Award, ArrowRight, Users, BarChart3 } from 'lucide-react'
+import { motion } from "framer-motion"
 
 interface LeaderboardUser {
-  id: number;
-  name: string;
-  points: number;
-  avatar: string;
-  rank: number;
+  id: number
+  name: string
+  points: number
+  avatar: string
+  rank: number
+  change?: "up" | "down" | "same"
+  streak?: number
 }
 
 const topUsers: LeaderboardUser[] = [
@@ -19,6 +24,8 @@ const topUsers: LeaderboardUser[] = [
     points: 2030,
     avatar: "/placeholder.svg?height=40&width=40",
     rank: 2,
+    change: "up",
+    streak: 5,
   },
   {
     id: 1,
@@ -26,6 +33,8 @@ const topUsers: LeaderboardUser[] = [
     points: 7200,
     avatar: "/placeholder.svg?height=40&width=40",
     rank: 1,
+    change: "same",
+    streak: 12,
   },
   {
     id: 3,
@@ -33,117 +42,534 @@ const topUsers: LeaderboardUser[] = [
     points: 2200,
     avatar: "/placeholder.svg?height=40&width=40",
     rank: 3,
+    change: "down",
+    streak: 3,
   },
-];
+]
 
-const otherUsers: LeaderboardUser[] = Array(5)
+const otherUsers: LeaderboardUser[] = Array(7)
   .fill(null)
   .map((_, i) => ({
     id: i + 4,
-    name: "Emily Johnson",
-    points: 2100,
+    name: `User ${i + 4}`,
+    points: 2100 - i * 150,
     avatar: "/placeholder.svg?height=40&width=40",
     rank: i + 4,
-  }));
+    change: i % 3 === 0 ? "up" : i % 3 === 1 ? "down" : "same",
+    streak: Math.floor(Math.random() * 7) + 1,
+  }))
 
 export default function LeaderboardPage() {
+  const [animate, setAnimate] = useState(false)
+  const [activeTab, setActiveTab] = useState<'weekly' | 'monthly' | 'allTime'>('weekly')
+  const [showConfetti, setShowConfetti] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    setAnimate(true)
+    
+    // Show confetti effect on load
+    setShowConfetti(true)
+    const timer = setTimeout(() => setShowConfetti(false), 3000)
+    
+    return () => clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
+    if (showConfetti && canvasRef.current) {
+      const canvas = canvasRef.current
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+      
+      const confettiPieces: {
+        x: number;
+        y: number;
+        size: number;
+        color: string;
+        speed: number;
+        angle: number;
+        rotation: number;
+        rotationSpeed: number;
+      }[] = []
+      
+      const colors = ['#4CAF50', '#2196F3', '#FFC107', '#E91E63', '#9C27B0']
+      
+      // Create confetti pieces
+      for (let i = 0; i < 150; i++) {
+        confettiPieces.push({
+          x: Math.random() * canvas.width,
+          y: -20,
+          size: Math.random() * 10 + 5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          speed: Math.random() * 3 + 2,
+          angle: Math.random() * Math.PI * 2,
+          rotation: 0,
+          rotationSpeed: Math.random() * 0.2 - 0.1
+        })
+      }
+      
+      let animationFrame: number
+      
+      const animate = () => {
+        if (!showConfetti) {
+          cancelAnimationFrame(animationFrame)
+          return
+        }
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        
+        confettiPieces.forEach(piece => {
+          piece.y += piece.speed
+          piece.x += Math.sin(piece.angle) * 2
+          piece.rotation += piece.rotationSpeed
+          
+          ctx.save()
+          ctx.translate(piece.x, piece.y)
+          ctx.rotate(piece.rotation)
+          
+          ctx.fillStyle = piece.color
+          ctx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size)
+          
+          ctx.restore()
+          
+          // Reset confetti when it goes off screen
+          if (piece.y > canvas.height) {
+            piece.y = -20
+            piece.x = Math.random() * canvas.width
+          }
+        })
+        
+        animationFrame = requestAnimationFrame(animate)
+      }
+      
+      animate()
+      
+      return () => {
+        cancelAnimationFrame(animationFrame)
+      }
+    }
+  }, [showConfetti])
+
+  // Get medal color based on rank
+  const getMedalColor = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return "#4CAF50" // Green
+      case 2:
+        return "#2196F3" // Blue
+      case 3:
+        return "#FF9800" // Orange
+      default:
+        return "#64748b" // Slate
+    }
+  }
+
+  // Get trophy icon based on rank
+  const getTrophyIcon = (rank: number, className = "") => {
+    switch (rank) {
+      case 1:
+        return <Crown className={className} style={{ color: getMedalColor(1) }} />
+      case 2:
+        return <Trophy className={className} style={{ color: getMedalColor(2) }} />
+      case 3:
+        return <Medal className={className} style={{ color: getMedalColor(3) }} />
+      default:
+        return <Star className={className} style={{ color: getMedalColor(4) }} />
+    }
+  }
+
   return (
-    <main className="flex flex-col bg-background items-center">
-      <div className="pt-14 space-y-8">
-        <div className="bg-card text-primary-blue-DEFAULT rounded-lg px-6 py-3 border border-border inline-flex items-center gap-3">
-          <span className="text-md font-semibold px-2 py-1 bg-primary-blue rounded-md text-muted font-fragment-mono">
-            #4
-          </span>
-          <span className="text-foreground ">
-            You are doing better than 40% of the users!
-          </span>
-        </div>
+    <main className="flex flex-col bg-background items-center min-h-screen pb-16 relative overflow-hidden">
+      {/* Confetti canvas */}
+      <canvas 
+        ref={canvasRef} 
+        className="fixed inset-0 pointer-events-none z-50"
+        style={{ display: showConfetti ? 'block' : 'none' }}
+      />
+      
+      {/* Background decorations */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-b from-purple-500/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-t from-blue-500/5 to-transparent rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
+      
+      <div className="w-full max-w-4xl pt-14 space-y-12 px-4 relative z-10">
+        {/* Page Title */}
+        <motion.div 
+          className="text-center"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="inline-flex items-center gap-2 mb-3">
+            <Trophy className="h-6 w-6 text-yellow-500" />
+            <h1 className="text-4xl font-bold text-foreground">Leaderboard</h1>
+            <Trophy className="h-6 w-6 text-yellow-500" />
+          </div>
+          <p className="text-secondary-foreground">Compete with others and climb to the top!</p>
+          
+          {/* Time period tabs */}
+          <div className="flex justify-center mt-6">
+            <div className="inline-flex bg-accent/50 p-1 rounded-lg">
+              <Button 
+                variant={activeTab === 'weekly' ? 'default' : 'ghost'} 
+                size="sm"
+                onClick={() => setActiveTab('weekly')}
+                className="rounded-md"
+              >
+                Weekly
+              </Button>
+              <Button 
+                variant={activeTab === 'monthly' ? 'default' : 'ghost'} 
+                size="sm"
+                onClick={() => setActiveTab('monthly')}
+                className="rounded-md"
+              >
+                Monthly
+              </Button>
+              <Button 
+                variant={activeTab === 'allTime' ? 'default' : 'ghost'} 
+                size="sm"
+                onClick={() => setActiveTab('allTime')}
+                className="rounded-md"
+              >
+                All Time
+              </Button>
+            </div>
+          </div>
+        </motion.div>
 
-        <div className="flex justify-center p-8 rounded-lg">
-          <div className="flex items-end">
-            {topUsers.map((user) => {
-              const height =
-                user.rank === 1 ? "h-32" : user.rank === 2 ? "h-24" : "h-16";
-              const order =
-                user.rank === 1
-                  ? "order-2"
-                  : user.rank === 2
-                  ? "order-1"
-                  : "order-3";
-              const avatarSize = user.rank === 1 ? "h-20 w-20" : "h-16 w-16";
+        {/* Stats Cards */}
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Card className="p-4 border-divider bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 hover:border-blue-500/30">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-500/10 p-3 rounded-full">
+                <Users className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-sm text-secondary-foreground">Total Participants</p>
+                <p className="text-2xl font-bold">1,248</p>
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-4 border-divider bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 hover:border-green-500/30">
+            <div className="flex items-center gap-3">
+              <div className="bg-green-500/10 p-3 rounded-full">
+                <BarChart3 className="h-5 w-5 text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm text-secondary-foreground">Average Points</p>
+                <p className="text-2xl font-bold">1,850</p>
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-4 border-divider bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 hover:border-purple-500/30">
+            <div className="flex items-center gap-3">
+              <div className="bg-purple-500/10 p-3 rounded-full">
+                <Flame className="h-5 w-5 text-purple-500" />
+              </div>
+              <div>
+                <p className="text-sm text-secondary-foreground">Longest Streak</p>
+                <p className="text-2xl font-bold">12 days</p>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
 
-              return (
-                <div
-                  key={user.id}
-                  className="flex flex-col items-center"
-                  style={{ width: "120px" }}
-                >
-                  <div className={`w-full flex flex-col items-center ${order}`}>
-                    <div className="relative mb-4">
-                      <div
-                        className={`${avatarSize} rounded-full bg-muted-foreground`}
-                      />
-                      {user.rank === 1 && (
-                        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                          <span className="text-3xl">👑</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-center mb-4">
-                      <p className="font-medium text-sm whitespace-normal break-words px-2">
-                        {user.name}
-                      </p>
-                      <p className="text-xs text-secondary-foreground mt-1 font-fragment-mono">
-                        {user.points} points
-                      </p>
-                    </div>
-                    <div
-                      className={`w-20 ${height} bg-card  bg-gradient-to-b from-[#21231E] to-[#1C1D19] rounded-t-lg flex items-center justify-center`}
-                    >
-                      <span
-                        className={`text-4xl font-bold ${
-                          user.rank === 1
-                            ? "text-primary-green-DEFAULT"
-                            : user.rank === 2
-                            ? "text-primary-blue-DEFAULT"
-                            : "text-primary-orange-DEFAULT"
-                        }`}
-                      >
-                        {user.rank}
-                      </span>
-                    </div>
+        {/* Your Rank Card */}
+        <motion.div 
+          className="relative"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-green-500/20 to-orange-500/20 blur-xl opacity-50 rounded-xl"></div>
+          <Card className="relative overflow-hidden bg-card/80 backdrop-blur-sm border-2 border-divider rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-green-500/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <span className="text-2xl font-bold text-foreground relative z-10">#4</span>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                    <ChevronUp size={14} />
                   </div>
                 </div>
-              );
-            })}
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">Your Rank</h2>
+                  <p className="text-secondary-foreground">Top 40% of all users</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 bg-accent/50 px-6 py-3 rounded-lg relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <Shield className="text-blue-500 h-6 w-6 relative z-10" />
+                <div className="relative z-10">
+                  <p className="text-foreground font-medium">1,950 points</p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-full bg-accent/70 h-1.5 rounded-full mt-1">
+                      <div className="bg-blue-500 h-full rounded-full" style={{ width: '80%' }}></div>
+                    </div>
+                    <p className="text-xs text-secondary-foreground whitespace-nowrap">50 pts to rank 3</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Top 3 Podium */}
+        <div className="relative">
+          {/* Decorative elements */}
+          <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-green-500/5 to-transparent rounded-t-3xl"></div>
+          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
+
+          <div className="relative z-10">
+            <div className="flex justify-center items-end h-[340px] pt-16">
+              {topUsers.map((user) => {
+                const height = user.rank === 1 ? "h-64" : user.rank === 2 ? "h-52" : "h-40"
+                const order = user.rank === 1 ? "order-2" : user.rank === 2 ? "order-1" : "order-3"
+                const avatarSize = user.rank === 1 ? "h-24 w-24" : "h-20 w-20"
+                const delay = user.rank === 1 ? "delay-300" : user.rank === 2 ? "delay-100" : "delay-500"
+                const translateY = animate ? "translate-y-0" : "translate-y-20"
+                const opacity = animate ? "opacity-100" : "opacity-0"
+
+                return (
+                  <div
+                    key={user.id}
+                    className={`flex flex-col items-center px-2 ${order} transition-all duration-700 ${delay} ${translateY} ${opacity}`}
+                    style={{ width: "140px" }}
+                  >
+                    <div className="w-full flex flex-col items-center">
+                      <div className="relative mb-4 group">
+                        <div
+                          className={`${avatarSize} rounded-full bg-accent border-4 relative overflow-hidden transition-transform duration-300 group-hover:scale-105`}
+                          style={{ borderColor: getMedalColor(user.rank) }}
+                        >
+                          <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center">
+                            <img
+                              src={user.avatar || "/placeholder.svg"}
+                              alt={user.name}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </div>
+                        {user.rank === 1 && (
+                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 animate-bounce">
+                            <span className="text-4xl">👑</span>
+                          </div>
+                        )}
+                        <div className="absolute -bottom-2 -right-2 bg-card rounded-full p-1 border-2 border-divider">
+                          {getTrophyIcon(user.rank, "h-5 w-5")}
+                        </div>
+                        
+                        {/* Sparkle effects for first place */}
+                        {user.rank === 1 && (
+                          <>
+                            <div className="absolute -top-2 -left-2 text-yellow-500 animate-pulse">
+                              <Sparkles size={16} />
+                            </div>
+                            <div className="absolute top-1/2 -right-4 text-yellow-500 animate-pulse delay-300">
+                              <Sparkles size={16} />
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="text-center mb-4">
+                        <p className="font-bold text-foreground whitespace-normal break-words px-2">{user.name}</p>
+                        <div className="flex items-center justify-center gap-1 mt-1">
+                          <p
+                            className="text-sm font-mono font-semibold"
+                            style={{ color: getMedalColor(user.rank) }}
+                          >
+                            {user.points.toLocaleString()} pts
+                          </p>
+                          {user.streak && (
+                            <div className="flex items-center gap-0.5 bg-accent/50 px-1 rounded text-xs">
+                              <span>🔥</span>
+                              <span>{user.streak}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div
+                        className={`w-full ${height} rounded-t-xl flex items-center justify-center relative overflow-hidden group`}
+                        style={{
+                          background: `linear-gradient(to top, ${getMedalColor(user.rank)}20, ${getMedalColor(user.rank)}40)`,
+                          boxShadow: `0 0 20px ${getMedalColor(user.rank)}30`,
+                        }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div className="relative z-10 flex flex-col items-center">
+                          <span
+                            className="text-5xl font-bold transition-transform duration-300 group-hover:scale-110"
+                            style={{ color: getMedalColor(user.rank) }}
+                          >
+                            {user.rank}
+                          </span>
+                          {getTrophyIcon(user.rank, "h-6 w-6 mt-2 opacity-80")}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
-        <div className="space-y-3">
-          {otherUsers.map((user) => (
-            <Card
-              key={user.id}
-              className="px-6 py-4 flex items-center gap-4 border-divider border-2 bg-muted"
-            >
-              <span className="text-secondary-foreground font-fragment-mono w-8">
-                {user.rank.toString().padStart(2, "0")}
-              </span>
-              <Avatar className="h-10 w-10 bg-secondary">
-                {/* <img
-                  src={user.avatar || "/placeholder.svg"}
-                  alt={user.name}
-                  className="object-cover"
-                /> */}
-              </Avatar>
-              <div className="flex flex-col gap-1">
-                <p className="font-medium text-sm">{user.name}</p>
-                <p className="text-xs text-secondary-foreground font-fragment-mono">
-                  {user.points} points
-                </p>
-              </div>
-            </Card>
-          ))}
+
+        {/* Other Users */}
+        <div className="space-y-3 relative">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-foreground">Ranking</h2>
+            <div className="flex items-center text-sm text-secondary-foreground">
+              <span>Updated 2 hours ago</span>
+            </div>
+          </div>
+
+          {otherUsers.map((user, index) => {
+            const delay = `delay-${(index + 1) * 100}`
+            const translateX = animate ? "translate-x-0" : "translate-x-10"
+            const opacity = animate ? "opacity-100" : "opacity-0"
+
+            return (
+              <motion.div
+                key={user.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 + index * 0.05 }}
+              >
+                <Card
+                  className={`px-6 py-4 flex items-center gap-4 border-divider bg-card hover:bg-accent/30 transition-all duration-300 relative overflow-hidden group cursor-pointer`}
+                >
+                  <div
+                    className="absolute inset-y-0 left-0 w-1"
+                    style={{ backgroundColor: getMedalColor(user.rank > 3 ? 4 : user.rank) }}
+                  ></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                  <div className="relative z-10 flex items-center w-full">
+                    <span className="text-secondary-foreground font-mono w-8 text-center">
+                      {user.rank.toString().padStart(2, "0")}
+                    </span>
+
+                    <Avatar className="h-10 w-10 bg-accent border-2 border-divider relative overflow-hidden">
+                      <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} className="object-cover" />
+                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </Avatar>
+
+                    <div className="flex flex-col gap-1 ml-4">
+                      <p className="font-medium text-foreground">{user.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-secondary-foreground font-mono">
+                          {user.points.toLocaleString()} points
+                        </p>
+                        {user.streak && user.streak > 2 && (
+                          <div className="flex items-center gap-0.5 bg-accent/50 px-1 rounded text-xs">
+                            <span>🔥</span>
+                            <span>{user.streak}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="ml-auto flex items-center gap-3">
+                      {user.change && (
+                        <div
+                          className={`flex items-center ${
+                            user.change === "up"
+                              ? "text-green-500"
+                              : user.change === "down"
+                                ? "text-orange-500"
+                                : "text-secondary-foreground"
+                          }`}
+                        >
+                          {user.change === "up" && <ChevronUp size={16} />}
+                          {user.change === "down" && <ChevronUp size={16} className="rotate-180" />}
+                          {user.change === "same" && <span className="text-xs">-</span>}
+                        </div>
+                      )}
+
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/50 group-hover:bg-accent transition-colors duration-300">
+                        {getTrophyIcon(user.rank > 3 ? 4 : user.rank, "h-4 w-4")}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            )
+          })}
+
+          {/* Show more button */}
+          <Button 
+            variant="outline" 
+            className="w-full py-6 mt-4 border-2 border-dashed border-divider rounded-lg text-secondary-foreground hover:text-foreground hover:border-blue-500/50 transition-colors duration-300 group"
+          >
+            <span>Show more</span>
+            <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
+          </Button>
         </div>
+        
+        {/* Achievement badges section */}
+        <motion.div 
+          className="pt-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-foreground">Achievement Badges</h2>
+            <Button variant="ghost" size="sm" className="text-secondary-foreground hover:text-foreground">
+              View all <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            {[
+              { name: "Early Bird", icon: <Award className="h-6 w-6 text-purple-500" />, unlocked: true },
+              { name: "Streak Master", icon: <Flame className="h-6 w-6 text-orange-500" />, unlocked: true },
+              { name: "Top Contributor", icon: <Trophy className="h-6 w-6 text-yellow-500" />, unlocked: false },
+              { name: "Perfect Score", icon: <Sparkles className="h-6 w-6 text-blue-500" />, unlocked: false },
+              { name: "Rising Star", icon: <Star className="h-6 w-6 text-green-500" />, unlocked: true }
+            ].map((badge, index) => (
+              <Card 
+                key={index} 
+                className={`p-4 flex flex-col items-center justify-center text-center gap-2 aspect-square transition-all duration-300 hover:shadow-md ${
+                  badge.unlocked 
+                    ? "bg-card border-divider hover:border-blue-500/30" 
+                    : "bg-card/50 border-divider/50 text-secondary-foreground/50"
+                }`}
+              >
+                <div className={`p-3 rounded-full ${badge.unlocked ? "bg-accent/50" : "bg-accent/20"}`}>
+                  {badge.icon}
+                </div>
+                <p className="text-sm font-medium">{badge.name}</p>
+                <p className="text-xs text-secondary-foreground">
+                  {badge.unlocked ? "Unlocked" : "Locked"}
+                </p>
+              </Card>
+            ))}
+          </div>
+        </motion.div>
       </div>
     </main>
-  );
+  )
 }

@@ -15,8 +15,8 @@ const navItems: NavItem[] = [
   { icon: "📖", label: "Decks", href: "/decks" },
   { icon: "🧠", label: "Learn", href: "/learn" },
   { icon: "🔥", label: "Play Quiz", href: "/quiz" },
-  { icon: "✅", label: "Analytics", href: "/progress" },
-  { icon: "🏆", label: "Achievements", href: "/achievements" },
+  { icon: "🔍", label: "Analytics", href: "/analytics" },
+  // { icon: "🏆", label: "Achievements", href: "/achievements" },
   { icon: "👑", label: "Leaderboard", href: "/leaderboard" },
   { icon: "⚙️", label: "Settings", href: "/settings" },
 ];

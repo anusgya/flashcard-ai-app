@@ -1,15 +1,21 @@
+"use client"
 import { DeckCard } from "@/components/ui/deck-card";
+import { useDecks } from "@/hooks/api/use-deck";
 
-const decks = [
-  { id: 1, title: "JS Basics", progress: 75, cardsCount: 40 },
-  { id: 2, title: "React Fundamentals", progress: 45, cardsCount: 35 },
-  { id: 3, title: "TypeScript Essentials", progress: 90, cardsCount: 50 },
-  { id: 4, title: "Node.js Mastery", progress: 60, cardsCount: 45 },
-  { id: 5, title: "CSS Tricks", progress: 80, cardsCount: 30 },
-  { id: 6, title: "Web Security", progress: 55, cardsCount: 25 },
-];
+interface Deck {
+  id: string;
+  name: string;
+  description: string;
+  card_count?: number;
+  is_public?: boolean;
+  source_type?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 
 export default function LearnPage() {
+  const { decks } = useDecks();
   return (
     <div className="py-16 px-12 space-y-14">
       <div className="space-y-2">
@@ -22,12 +28,13 @@ export default function LearnPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {decks.map((deck) => (
+        {decks?.map((deck:Deck) => (
           <DeckCard
             key={deck.id}
-            title={deck.title}
-            progress={deck.progress}
-            cardsCount={deck.cardsCount}
+            id={deck.id}
+            title={deck.name}
+            progress={70}
+            cardsCount={deck.card_count||0}
           />
         ))}
       </div>

@@ -3,17 +3,24 @@
 import { QuizCard } from "@/components/quiz-card";
 import { motion } from "framer-motion";
 import { Zap } from "lucide-react";
+import { useDecks } from "@/hooks/api/use-deck";
 
-const decks = [
-  { id: 1, title: "JS Basics", cardsCount: 40, color: "orange" },
-  { id: 2, title: "React Fundamentals", cardsCount: 35, color: "blue" },
-  { id: 3, title: "TypeScript Essentials", cardsCount: 50, color: "green" },
-  { id: 4, title: "Node.js Mastery", cardsCount: 45, color: "blue" },
-  { id: 5, title: "CSS Tricks", cardsCount: 30, color: "orange" },
-  { id: 6, title: "Web Security", cardsCount: 25, color: "green" },
-];
+interface Deck {
+  id: string;
+  name: string;
+  description: string;
+  card_count?: number;
+  is_public?: boolean;
+  source_type?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+
 
 export default function QuizPage() {
+  const { decks } = useDecks();
+
   return (
     <div className="min-h-screen bg-background py-16 px-12 space-y-14">
       <div className="flex flex-col items-start gap-2">
@@ -39,7 +46,7 @@ export default function QuizPage() {
         initial="hidden"
         animate="show"
       >
-        {decks.map((deck) => (
+        {decks?.map((deck:Deck) => (
           <motion.div
             key={deck.id}
             variants={{
@@ -48,9 +55,9 @@ export default function QuizPage() {
             }}
           >
             <QuizCard
-              title={deck.title}
-              cardsCount={deck.cardsCount}
-              color={deck.color as "blue" | "green" | "orange"}
+              title={deck.name}
+              cardsCount={deck.card_count||0}
+            
             />
           </motion.div>
         ))}

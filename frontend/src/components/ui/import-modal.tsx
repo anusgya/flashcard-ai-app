@@ -14,7 +14,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
-export function ImportModal() {
+export function ImportModal({onImportComplete }: {onImportComplete: () => void}) {
   const [importType, setImportType] = React.useState<"csv" | "anki">("csv");
   const [file, setFile] = React.useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
