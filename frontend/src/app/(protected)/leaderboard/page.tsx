@@ -4,8 +4,20 @@ import { useState, useEffect, useRef } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Trophy, Medal, Star, Crown, ChevronUp, Shield, Sparkles, Flame, Award, ArrowRight, Users, BarChart3 } from 'lucide-react'
-import { motion } from "framer-motion"
+import {
+  Trophy,
+  Medal,
+  Star,
+  Crown,
+  ChevronUp,
+  Shield,
+  Sparkles,
+  Flame,
+  Award,
+  ArrowRight,
+  Users,
+  BarChart3,
+} from "lucide-react"
 
 interface LeaderboardUser {
   id: number
@@ -61,97 +73,11 @@ const otherUsers: LeaderboardUser[] = Array(7)
 
 export default function LeaderboardPage() {
   const [animate, setAnimate] = useState(false)
-  const [activeTab, setActiveTab] = useState<'weekly' | 'monthly' | 'allTime'>('weekly')
-  const [showConfetti, setShowConfetti] = useState(false)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
+  const [activeTab, setActiveTab] = useState<"weekly" | "monthly" | "allTime">("weekly")
+  
   useEffect(() => {
     setAnimate(true)
-    
-    // Show confetti effect on load
-    setShowConfetti(true)
-    const timer = setTimeout(() => setShowConfetti(false), 3000)
-    
-    return () => clearTimeout(timer)
   }, [])
-
-  useEffect(() => {
-    if (showConfetti && canvasRef.current) {
-      const canvas = canvasRef.current
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return
-
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-      
-      const confettiPieces: {
-        x: number;
-        y: number;
-        size: number;
-        color: string;
-        speed: number;
-        angle: number;
-        rotation: number;
-        rotationSpeed: number;
-      }[] = []
-      
-      const colors = ['#4CAF50', '#2196F3', '#FFC107', '#E91E63', '#9C27B0']
-      
-      // Create confetti pieces
-      for (let i = 0; i < 150; i++) {
-        confettiPieces.push({
-          x: Math.random() * canvas.width,
-          y: -20,
-          size: Math.random() * 10 + 5,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          speed: Math.random() * 3 + 2,
-          angle: Math.random() * Math.PI * 2,
-          rotation: 0,
-          rotationSpeed: Math.random() * 0.2 - 0.1
-        })
-      }
-      
-      let animationFrame: number
-      
-      const animate = () => {
-        if (!showConfetti) {
-          cancelAnimationFrame(animationFrame)
-          return
-        }
-        
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
-        
-        confettiPieces.forEach(piece => {
-          piece.y += piece.speed
-          piece.x += Math.sin(piece.angle) * 2
-          piece.rotation += piece.rotationSpeed
-          
-          ctx.save()
-          ctx.translate(piece.x, piece.y)
-          ctx.rotate(piece.rotation)
-          
-          ctx.fillStyle = piece.color
-          ctx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size)
-          
-          ctx.restore()
-          
-          // Reset confetti when it goes off screen
-          if (piece.y > canvas.height) {
-            piece.y = -20
-            piece.x = Math.random() * canvas.width
-          }
-        })
-        
-        animationFrame = requestAnimationFrame(animate)
-      }
-      
-      animate()
-      
-      return () => {
-        cancelAnimationFrame(animationFrame)
-      }
-    }
-  }, [showConfetti])
 
   // Get medal color based on rank
   const getMedalColor = (rank: number) => {
@@ -183,114 +109,21 @@ export default function LeaderboardPage() {
 
   return (
     <main className="flex flex-col bg-background items-center min-h-screen pb-16 relative overflow-hidden">
-      {/* Confetti canvas */}
-      <canvas 
-        ref={canvasRef} 
-        className="fixed inset-0 pointer-events-none z-50"
-        style={{ display: showConfetti ? 'block' : 'none' }}
-      />
-      
       {/* Background decorations */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-b from-purple-500/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-t from-blue-500/5 to-transparent rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
-      
+
       <div className="w-full max-w-4xl pt-14 space-y-12 px-4 relative z-10">
         {/* Page Title */}
-        <motion.div 
-          className="text-center"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="inline-flex items-center gap-2 mb-3">
-            <Trophy className="h-6 w-6 text-yellow-500" />
-            <h1 className="text-4xl font-bold text-foreground">Leaderboard</h1>
-            <Trophy className="h-6 w-6 text-yellow-500" />
-          </div>
-          <p className="text-secondary-foreground">Compete with others and climb to the top!</p>
-          
-          {/* Time period tabs */}
-          <div className="flex justify-center mt-6">
-            <div className="inline-flex bg-accent/50 p-1 rounded-lg">
-              <Button 
-                variant={activeTab === 'weekly' ? 'default' : 'ghost'} 
-                size="sm"
-                onClick={() => setActiveTab('weekly')}
-                className="rounded-md"
-              >
-                Weekly
-              </Button>
-              <Button 
-                variant={activeTab === 'monthly' ? 'default' : 'ghost'} 
-                size="sm"
-                onClick={() => setActiveTab('monthly')}
-                className="rounded-md"
-              >
-                Monthly
-              </Button>
-              <Button 
-                variant={activeTab === 'allTime' ? 'default' : 'ghost'} 
-                size="sm"
-                onClick={() => setActiveTab('allTime')}
-                className="rounded-md"
-              >
-                All Time
-              </Button>
-            </div>
-          </div>
-        </motion.div>
+        <div className="flex flex-col gap-2">
+          <div className="text-2xl font-bold ">Leaderboard</div>
+          <p className="font-fragment-mono text-sm text-secondary-foreground">See how you are doing in comparison to others</p>
+        </div>
 
-        {/* Stats Cards */}
-        <motion.div 
-          className="grid grid-cols-1 md:grid-cols-3 gap-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <Card className="p-4 border-divider bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 hover:border-blue-500/30">
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-500/10 p-3 rounded-full">
-                <Users className="h-5 w-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-sm text-secondary-foreground">Total Participants</p>
-                <p className="text-2xl font-bold">1,248</p>
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-4 border-divider bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 hover:border-green-500/30">
-            <div className="flex items-center gap-3">
-              <div className="bg-green-500/10 p-3 rounded-full">
-                <BarChart3 className="h-5 w-5 text-green-500" />
-              </div>
-              <div>
-                <p className="text-sm text-secondary-foreground">Average Points</p>
-                <p className="text-2xl font-bold">1,850</p>
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-4 border-divider bg-card/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 hover:border-purple-500/30">
-            <div className="flex items-center gap-3">
-              <div className="bg-purple-500/10 p-3 rounded-full">
-                <Flame className="h-5 w-5 text-purple-500" />
-              </div>
-              <div>
-                <p className="text-sm text-secondary-foreground">Longest Streak</p>
-                <p className="text-2xl font-bold">12 days</p>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
+        {/* Stats Cards - already commented out, keeping as is */}
 
-        {/* Your Rank Card */}
-        <motion.div 
-          className="relative"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
+        {/* Your Rank Card - replacing motion.div with regular div */}
+        <div className="relative mb-20">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-green-500/20 to-orange-500/20 blur-xl opacity-50 rounded-xl"></div>
           <Card className="relative overflow-hidden bg-card/80 backdrop-blur-sm border-2 border-divider rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
@@ -321,7 +154,7 @@ export default function LeaderboardPage() {
                   <p className="text-foreground font-medium">1,950 points</p>
                   <div className="flex items-center gap-2">
                     <div className="w-full bg-accent/70 h-1.5 rounded-full mt-1">
-                      <div className="bg-blue-500 h-full rounded-full" style={{ width: '80%' }}></div>
+                      <div className="bg-blue-500 h-full rounded-full" style={{ width: "80%" }}></div>
                     </div>
                     <p className="text-xs text-secondary-foreground whitespace-nowrap">50 pts to rank 3</p>
                   </div>
@@ -329,9 +162,9 @@ export default function LeaderboardPage() {
               </div>
             </div>
           </Card>
-        </motion.div>
+        </div>
 
-        {/* Top 3 Podium */}
+        {/* Top 3 Podium - keeping as is since it doesn't use motion.div */}
         <div className="relative">
           {/* Decorative elements */}
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-green-500/5 to-transparent rounded-t-3xl"></div>
@@ -374,17 +207,17 @@ export default function LeaderboardPage() {
                           </div>
                         )}
                         <div className="absolute -bottom-2 -right-2 bg-card rounded-full p-1 border-2 border-divider">
-                          {getTrophyIcon(user.rank, "h-5 w-5")}
+                          {/* {getTrophyIcon(user.rank, "h-5 w-5")} */}
                         </div>
-                        
+
                         {/* Sparkle effects for first place */}
                         {user.rank === 1 && (
                           <>
                             <div className="absolute -top-2 -left-2 text-yellow-500 animate-pulse">
-                              <Sparkles size={16} />
+                              {/* <Sparkles size={16} /> */}
                             </div>
                             <div className="absolute top-1/2 -right-4 text-yellow-500 animate-pulse delay-300">
-                              <Sparkles size={16} />
+                              {/* <Sparkles size={16} /> */}
                             </div>
                           </>
                         )}
@@ -393,10 +226,7 @@ export default function LeaderboardPage() {
                       <div className="text-center mb-4">
                         <p className="font-bold text-foreground whitespace-normal break-words px-2">{user.name}</p>
                         <div className="flex items-center justify-center gap-1 mt-1">
-                          <p
-                            className="text-sm font-mono font-semibold"
-                            style={{ color: getMedalColor(user.rank) }}
-                          >
+                          <p className="text-sm font-mono font-medium text-secondary-foreground" >
                             {user.points.toLocaleString()} pts
                           </p>
                           {user.streak && (
@@ -439,9 +269,6 @@ export default function LeaderboardPage() {
         <div className="space-y-3 relative">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-foreground">Ranking</h2>
-            <div className="flex items-center text-sm text-secondary-foreground">
-              <span>Updated 2 hours ago</span>
-            </div>
           </div>
 
           {otherUsers.map((user, index) => {
@@ -450,12 +277,7 @@ export default function LeaderboardPage() {
             const opacity = animate ? "opacity-100" : "opacity-0"
 
             return (
-              <motion.div
-                key={user.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 + index * 0.05 }}
-              >
+              <div key={user.id}>
                 <Card
                   className={`px-6 py-4 flex items-center gap-4 border-divider bg-card hover:bg-accent/30 transition-all duration-300 relative overflow-hidden group cursor-pointer`}
                 >
@@ -514,61 +336,21 @@ export default function LeaderboardPage() {
                     </div>
                   </div>
                 </Card>
-              </motion.div>
+              </div>
             )
           })}
 
           {/* Show more button */}
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full py-6 mt-4 border-2 border-dashed border-divider rounded-lg text-secondary-foreground hover:text-foreground hover:border-blue-500/50 transition-colors duration-300 group"
           >
             <span>Show more</span>
             <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
           </Button>
         </div>
-        
-        {/* Achievement badges section */}
-        <motion.div 
-          className="pt-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-foreground">Achievement Badges</h2>
-            <Button variant="ghost" size="sm" className="text-secondary-foreground hover:text-foreground">
-              View all <ArrowRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-            {[
-              { name: "Early Bird", icon: <Award className="h-6 w-6 text-purple-500" />, unlocked: true },
-              { name: "Streak Master", icon: <Flame className="h-6 w-6 text-orange-500" />, unlocked: true },
-              { name: "Top Contributor", icon: <Trophy className="h-6 w-6 text-yellow-500" />, unlocked: false },
-              { name: "Perfect Score", icon: <Sparkles className="h-6 w-6 text-blue-500" />, unlocked: false },
-              { name: "Rising Star", icon: <Star className="h-6 w-6 text-green-500" />, unlocked: true }
-            ].map((badge, index) => (
-              <Card 
-                key={index} 
-                className={`p-4 flex flex-col items-center justify-center text-center gap-2 aspect-square transition-all duration-300 hover:shadow-md ${
-                  badge.unlocked 
-                    ? "bg-card border-divider hover:border-blue-500/30" 
-                    : "bg-card/50 border-divider/50 text-secondary-foreground/50"
-                }`}
-              >
-                <div className={`p-3 rounded-full ${badge.unlocked ? "bg-accent/50" : "bg-accent/20"}`}>
-                  {badge.icon}
-                </div>
-                <p className="text-sm font-medium">{badge.name}</p>
-                <p className="text-xs text-secondary-foreground">
-                  {badge.unlocked ? "Unlocked" : "Locked"}
-                </p>
-              </Card>
-            ))}
-          </div>
-        </motion.div>
+
+        {/* Achievement badges section - already commented out, keeping as is */}
       </div>
     </main>
   )

@@ -55,6 +55,7 @@ export default function QuizPage() {
             }}
           >
             <QuizCard
+              deck_id={deck.id}
               title={deck.name}
               cardsCount={deck.card_count||0}
             

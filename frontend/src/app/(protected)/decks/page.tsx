@@ -32,7 +32,7 @@ export default function DecksPage() {
       {/* Header */}
       <div className="flex justify-between items-end gap-6">
         <div className="space-y-2">
-          <h1 className="text-xl font-bold text-foreground">All decks</h1>
+          <h1 className="text-2xl font-bold text-foreground">All decks</h1>
           <p className="text-secondary-foreground font-fragment-mono text-sm">
             All your card collections are here
           </p>

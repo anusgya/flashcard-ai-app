@@ -85,3 +85,11 @@ class QuizSessionStats(BaseModel):
     best_score: int
     average_time: float
     completion_rate: float
+
+# Add this new schema definition
+class QuizStartResponse(BaseModel):
+    session: QuizSessionResponse # Make sure QuizSessionResponse is defined/imported
+    questions: List[QuizQuestionResponse] # Make sure QuizQuestionResponse is defined/imported
+
+    class Config:
+        orm_mode = True

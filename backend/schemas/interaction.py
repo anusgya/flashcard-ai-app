@@ -7,6 +7,7 @@ class InteractionType(str, Enum):
     CHAT = "chat"
     SEARCH = "search"
 
+
 class ResponseType(str, Enum):
     MNEMONIC = "mnemonic"
     EXPLANATION = "explanation"
@@ -50,7 +51,7 @@ class LLMResponseResponse(LLMResponseBase):
 # Request schemas for specific LLM operations
 class MnemonicRequest(BaseModel):
     card_id: UUID4
-    technique: Optional[str] = "default"
+    technique: Optional[str] = "acronym"
 
 class ExplanationRequest(BaseModel):
     card_id: UUID4

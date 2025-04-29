@@ -5,16 +5,18 @@ import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 
 interface QuizCardProps {
+  deck_id: string;
   title: string;
   cardsCount: number;
 }
 
-export function QuizCard({ title, cardsCount }: QuizCardProps) {
+export function QuizCard({ deck_id, title, cardsCount }: QuizCardProps) {
   const colors = ["primary-green", "primary-orange", "primary-blue"];
   const randomColor = colors[Math.floor(Math.random() * colors.length)];
+  console.log("this is a deckid duh", deck_id);
 
   return (
-    <Link href="/quiz/1">
+    <Link href={`quiz/${deck_id}`}>
       <motion.div
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}

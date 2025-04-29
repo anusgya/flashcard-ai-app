@@ -14,6 +14,7 @@ class DifficultyLevel(str, Enum):
 
 class CardState(str, Enum):
     NEW = "new"
+    LEARNING = "learning" 
     DUE = "due"
 
 class Card(Base):
@@ -26,20 +27,23 @@ class Card(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     difficulty_level = Column(SQLAlchemyEnum(DifficultyLevel))
-    times_reviewed = Column(Integer, default=0)
+    times_reviewed = Column(Integer, default=0) # Note: This seems redundant now with total_reviews
     last_reviewed = Column(DateTime, nullable=True)
+    next_review = Column(DateTime, nullable=True)
     success_rate = Column(Float, default=0.0)
     source = Column(String, nullable=True)
-    card_state = Column(String, default=CardState.NEW)  # new|due
-    
+    card_state = Column(SQLAlchemyEnum(CardState), default=CardState.NEW)
+    current_streak = Column(Integer, default=0) # Added this line
+    total_reviews = Column(Integer, default=0) # Added this line
+
     # Relationships
     deck = relationship("Deck", back_populates="cards")
     tags = relationship("CardTag", back_populates="card", cascade="all, delete-orphan")
     media = relationship("CardMedia", back_populates="card", cascade="all, delete-orphan")
-    study_records = relationship("StudyRecord", back_populates="card")
-    interactions = relationship("CardInteraction", back_populates="card")
-    llm_responses = relationship("LLMResponse", back_populates="card")
-    quiz_questions = relationship("QuizQuestion", back_populates="card")
+    study_records = relationship("StudyRecord", back_populates="card", cascade="all, delete-orphan")
+    interactions = relationship("CardInteraction", back_populates="card", cascade="all, delete-orphan")
+    llm_responses = relationship("LLMResponse", back_populates="card", cascade="all, delete-orphan")
+    quiz_questions = relationship("QuizQuestion", back_populates="card", cascade="all, delete-orphan")
 
 
 class CardMedia(Base):

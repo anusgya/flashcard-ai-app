@@ -89,8 +89,8 @@ async def create_card(
         front_content=card_data.front_content,
         back_content=card_data.back_content,
         source=card_data.source,
-        difficulty_level=schemas.DifficultyLevel.NEW.value,
-        card_state=schemas.CardState.NEW.value
+        difficulty_level=schemas.DifficultyLevel.NEW,
+        card_state=schemas.CardState.NEW
     )
     
     db.add(new_card)

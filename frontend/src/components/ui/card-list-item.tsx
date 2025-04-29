@@ -23,6 +23,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { deleteCard, useCards } from "@/hooks/api/use-card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // The interface now directly matches the card properties from the API
 interface CardListItemProps {
@@ -154,12 +160,28 @@ export function CardListItem(props: CardListItemProps) {
           </div>
         </div>
         <div className="flex items-center gap-6">
-          <Button
-            variant="outline"
-            className="text-purple-300 border-b-3 rounded-full hover:text-primary-blue/90 text-xs"
-          >
-            get cheat code
-          </Button>
+          {/* <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="text-purple-300 border-b-3 rounded-full hover:text-primary-blue/90 text-xs"
+                onClick={(e) => e.preventDefault()}
+              >
+                Ask AI
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem className="cursor-pointer">
+                Generate Mnemonics
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                Generate Example
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                Explain Like I'm 5
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu> */}
           <div className="flex gap-2" onClick={(e) => e.preventDefault()}>
             <Button
               variant="ghost"

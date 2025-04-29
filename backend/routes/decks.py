@@ -187,8 +187,14 @@ async def delete_deck(
             detail="Deck not found or you don't have access to it"
         )
     
-    db.delete(deck)
-    db.commit()
+    try:
+        db.delete(deck)
+        db.commit()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error deleting deck: {str(e)}"
+        )
     
     return None
 

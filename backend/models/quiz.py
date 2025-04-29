@@ -12,7 +12,7 @@ class QuizSession(Base):
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    deck_id = Column(UUID(as_uuid=True), ForeignKey("decks.id"), nullable=False)
+    deck_id = Column(UUID(as_uuid=True), ForeignKey("decks.id", ondelete="CASCADE"), nullable=True)
     start_time = Column(DateTime, default=datetime.utcnow)
     end_time = Column(DateTime, nullable=True)
     total_questions = Column(Integer, default=0)
@@ -24,14 +24,16 @@ class QuizSession(Base):
     # Relationships
     user = relationship("User", back_populates="quiz_sessions")
     deck = relationship("Deck")
-    answers = relationship("QuizAnswer", back_populates="session", cascade="all, delete-orphan")
+    # Remove cascade="all, delete-orphan" from here
+    answers = relationship("QuizAnswer", cascade='delete', back_populates="session") # Rely on DB cascades now
 
 
 class QuizQuestion(Base):
     __tablename__ = "quiz_questions"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    card_id = Column(UUID(as_uuid=True), ForeignKey("cards.id"), nullable=False)
+    # Assuming Card model also has appropriate cascades if needed
+    card_id = Column(UUID(as_uuid=True), ForeignKey("cards.id", ondelete="CASCADE"), nullable=False)
     question_text = Column(String, nullable=False)
     correct_answer = Column(String, nullable=False)
     options = Column(ARRAY(String), nullable=False)
@@ -40,15 +42,17 @@ class QuizQuestion(Base):
     
     # Relationships
     card = relationship("Card", back_populates="quiz_questions")
-    answers = relationship("QuizAnswer", back_populates="question")
+    # Remove cascade here too if it exists, rely on DB cascade on QuizAnswer.question_id
+    answers = relationship("QuizAnswer", cascade='delete', back_populates="question")
 
 
 class QuizAnswer(Base):
     __tablename__ = "quiz_answers"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id = Column(UUID(as_uuid=True), ForeignKey("quiz_sessions.id"), nullable=False)
-    question_id = Column(UUID(as_uuid=True), ForeignKey("quiz_questions.id"), nullable=False)
+    # Keep DB cascades
+    session_id = Column(UUID(as_uuid=True), ForeignKey("quiz_sessions.id", ondelete="CASCADE"), nullable=False)
+    question_id = Column(UUID(as_uuid=True), ForeignKey("quiz_questions.id", ondelete="CASCADE"), nullable=False)
     user_answer = Column(String, nullable=False)
     is_correct = Column(Boolean, default=False)
     time_taken = Column(Integer, default=0)  # in seconds

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, UUID4, Field
 from typing import List, Optional, Union, Annotated
-from enum import Enum
+from enums import Enum
 from datetime import datetime
 
 # Import CardResponse directly since we've fixed circular dependencies

@@ -13,6 +13,7 @@ class DifficultyLevel(str, Enum):
 
 class CardState(str, Enum):
     NEW = "new"
+    LEARNING = "learning"
     DUE = "due"
 
 class MediaType(str, Enum):

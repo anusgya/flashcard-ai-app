@@ -2,55 +2,26 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime
 
 from database import get_db
-import schemas
-from models import Card, CardInteraction, LLMResponse, Deck
+from models import Card, Deck, CardInteraction, LLMResponse
+from schemas.interaction import (
+    CardInteractionBase, CardInteractionCreate, CardInteractionResponse,
+    LLMResponseBase, LLMResponseCreate, LLMResponseResponse, LLMResponseUpdate,
+    MnemonicRequest, ExplanationRequest, ExampleRequest, ResponseType
+)
 from auth import get_current_active_user
+from utils.gemini_utils import generate_mnemonic, generate_explanation, generate_examples, chat_about_card
 
 router = APIRouter(
     prefix="/api/interactions",
     tags=["interactions"],
-    responses={404: {"description": "Not found"}}
+    dependencies=[Depends(get_current_active_user)]
 )
 
-# Record a card interaction (chat or search)
-@router.post("/cards/{card_id}/interactions", response_model=schemas.CardInteractionResponse, status_code=status.HTTP_201_CREATED)
-async def create_card_interaction(
-    card_id: UUID,
-    interaction: schemas.CardInteractionBase,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_active_user)
-):
-    # Verify card exists and user has access
-    card = db.query(Card).join(Deck).filter(
-        Card.id == card_id,
-        Deck.user_id == current_user.id
-    ).first()
-    
-    if not card:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Card not found or you don't have access to it"
-        )
-    
-    # Create interaction record
-    new_interaction = CardInteraction(
-        card_id=card_id,
-        user_id=current_user.id,
-        interaction_type=interaction.interaction_type,
-        content=interaction.content
-    )
-    
-    db.add(new_interaction)
-    db.commit()
-    db.refresh(new_interaction)
-    
-    return new_interaction
 
 # Get interactions for a card
-@router.get("/cards/{card_id}/interactions", response_model=List[schemas.CardInteractionResponse])
+@router.get("/cards/{card_id}/interactions", response_model=List[CardInteractionResponse])
 async def get_card_interactions(
     card_id: UUID,
     db: Session = Depends(get_db),
@@ -77,10 +48,10 @@ async def get_card_interactions(
     return interactions
 
 # Generate a mnemonic for a card
-@router.post("/cards/{card_id}/mnemonics", response_model=schemas.LLMResponseResponse)
-async def generate_mnemonic(
+@router.post("/cards/{card_id}/mnemonics", response_model=LLMResponseResponse)
+async def generate_card_mnemonic(
     card_id: UUID,
-    request: schemas.MnemonicRequest,
+    request: MnemonicRequest,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
@@ -96,24 +67,18 @@ async def generate_mnemonic(
             detail="Card not found or you don't have access to it"
         )
     
-    # In a real implementation, you would call an LLM API here
-    # This is a simplified example
-    
-    technique = request.technique or "default"
-    front_content = card.front_content
-    back_content = card.back_content
-    
-    # Simulated LLM response (in a real app, you'd call an actual LLM service)
-    mnemonic_content = f"Here's a mnemonic to help you remember that {front_content} is {back_content}: "
-    
-    if technique == "acronym":
-        mnemonic_content += f"Create an acronym from the first letters of key words in '{back_content}'."
-    elif technique == "visualization":
-        mnemonic_content += f"Visualize a vivid scene connecting '{front_content}' with '{back_content}'."
-    elif technique == "rhyme":
-        mnemonic_content += f"Create a rhyme connecting '{front_content}' with '{back_content}'."
-    else:
-        mnemonic_content += f"Associate '{front_content}' with '{back_content}' by creating a memorable connection."
+    # Use Gemini to generate the mnemonic
+    try:
+        mnemonic_content = generate_mnemonic(
+            card.front_content, 
+            card.back_content, 
+            request.technique
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate mnemonic: {str(e)}"
+        )
     
     # Store the mnemonic
     new_mnemonic = LLMResponse(
@@ -130,10 +95,10 @@ async def generate_mnemonic(
     return new_mnemonic
 
 # Generate an explanation for a card
-@router.post("/cards/{card_id}/explanations", response_model=schemas.LLMResponseResponse)
-async def generate_explanation(
+@router.post("/cards/{card_id}/eli5", response_model=LLMResponseResponse)
+async def generate_card_explanation(
     card_id: UUID,
-    request: schemas.ExplanationRequest,
+    request: ExplanationRequest,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
@@ -149,20 +114,18 @@ async def generate_explanation(
             detail="Card not found or you don't have access to it"
         )
     
-    # In a real implementation, you would call an LLM API here
-    # This is a simplified example
-    
-    detail_level = request.detail_level
-    front_content = card.front_content
-    back_content = card.back_content
-    
-    # Simulated LLM response based on detail level
-    if detail_level == "basic":
-        explanation = f"Basic explanation of why {front_content} is {back_content}."
-    elif detail_level == "detailed":
-        explanation = f"Detailed explanation of why {front_content} is {back_content}, including historical context, related concepts, and practical applications."
-    else:  # medium
-        explanation = f"Medium-level explanation of why {front_content} is {back_content}, with some helpful context and related ideas."
+    # Use Gemini to generate the explanation
+    try:
+        explanation = generate_explanation(
+            card.front_content, 
+            card.back_content, 
+            request.detail_level
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate explanation: {str(e)}"
+        )
     
     # Store the explanation
     new_explanation = LLMResponse(
@@ -179,10 +142,10 @@ async def generate_explanation(
     return new_explanation
 
 # Generate examples for a card
-@router.post("/cards/{card_id}/examples", response_model=schemas.LLMResponseResponse)
-async def generate_examples(
+@router.post("/cards/{card_id}/examples", response_model=LLMResponseResponse)
+async def generate_card_examples(
     card_id: UUID,
-    request: schemas.ExampleRequest,
+    request: ExampleRequest,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
@@ -198,18 +161,18 @@ async def generate_examples(
             detail="Card not found or you don't have access to it"
         )
     
-    # In a real implementation, you would call an LLM API here
-    # This is a simplified example
-    
-    count = request.count
-    front_content = card.front_content
-    back_content = card.back_content
-    
-    # Simulated LLM response
-    examples = f"Here are {count} examples related to {front_content}:\n\n"
-    
-    for i in range(1, count + 1):
-        examples += f"{i}. Example {i} demonstrating how {front_content} relates to {back_content}.\n"
+    # Use Gemini to generate examples
+    try:
+        examples = generate_examples(
+            card.front_content, 
+            card.back_content, 
+            request.count
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate examples: {str(e)}"
+        )
     
     # Store the examples
     new_examples = LLMResponse(
@@ -226,10 +189,10 @@ async def generate_examples(
     return new_examples
 
 # Get all LLM responses for a card
-@router.get("/cards/{card_id}/llm-responses", response_model=List[schemas.LLMResponseResponse])
+@router.get("/cards/{card_id}/llm-responses", response_model=List[LLMResponseResponse])
 async def get_llm_responses(
     card_id: UUID,
-    response_type: Optional[schemas.ResponseType] = None,
+    response_type: Optional[ResponseType] = None,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
@@ -257,10 +220,10 @@ async def get_llm_responses(
     return responses
 
 # Pin/unpin an LLM response
-@router.patch("/llm-responses/{response_id}", response_model=schemas.LLMResponseResponse)
+@router.patch("/llm-responses/{response_id}", response_model=LLMResponseResponse)
 async def update_llm_response(
     response_id: UUID,
-    update: schemas.LLMResponseUpdate,
+    update: LLMResponseUpdate,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):

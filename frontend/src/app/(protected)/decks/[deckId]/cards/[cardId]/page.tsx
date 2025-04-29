@@ -1,11 +1,26 @@
 "use client";
 
-import { ArrowLeft, MoreVertical, X, Loader2 } from "lucide-react";
+import { ArrowLeft, MoreVertical, X, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
+import { 
+  useCardLLMResponses, 
+  generateMnemonic, 
+  generateExplanation, 
+  generateExamples, 
+  updateLLMResponse,
+  deleteLLMResponse,
+  ResponseType
+} from "@/hooks/api/useLLMResponses";
 
 interface PageProps {
   params: {
@@ -42,31 +57,54 @@ interface CardMedia {
   side: string;
 }
 
+interface LLMResponse {
+  id: string;
+  card_id: string;
+  response_type: ResponseType;
+  content: string;
+  is_pinned: boolean;
+  generated_at: string;
+}
+
 // Reusable InfoBox component
 const InfoBox = ({
   title,
   children,
   onClose,
+  onDelete,
 }: {
   title: string;
   children: React.ReactNode;
   onClose?: () => void;
+  onDelete?: () => void;
 }) => (
   <div className="bg-background rounded-lg border border-divider">
     <div className="p-4 border-b border-divider flex items-center justify-between">
       <h2 className="text-lg font-semibold text-secondary-foreground">
         {title}
       </h2>
-      {onClose && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="text-secondary-foreground hover:text-foreground -mr-2"
-        >
-          <X className="h-5 w-5" />
-        </Button>
-      )}
+      <div className="flex items-center gap-2">
+        {onDelete && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onDelete}
+            className="text-secondary-foreground hover:text-red-500"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="text-secondary-foreground hover:text-foreground -mr-2"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        )}
+      </div>
     </div>
     <div className="p-4">{children}</div>
   </div>
@@ -76,7 +114,31 @@ export default function CardDetailPage() {
   const [card, setCard] = useState<CardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const params = useParams<{deckId:string, cardId:string}>()
+  const [generatingType, setGeneratingType] = useState<ResponseType | null>(null);
+  const params = useParams<{deckId: string, cardId: string}>();
+  
+  // Fetch LLM responses
+  const { 
+    responses: llmResponses, 
+    isLoading:loadingResponses, 
+    isError: responseError,
+    mutate: mutateResponses
+  } = useCardLLMResponses(params.cardId);
+
+  // Group responses by type
+  const mnemonics = llmResponses?.filter((r: LLMResponse) => r.response_type === 'mnemonic') || [];
+  const explanations = llmResponses?.filter((r: LLMResponse) => r.response_type === 'explanation') || [];
+  const examples = llmResponses?.filter((r: LLMResponse) => r.response_type === 'example') || [];
+
+  // Get the most recent ones
+  const latestMnemonic = mnemonics[0];
+  const latestExplanation = explanations[0];
+  const latestExample = examples[0];
+
+  // Show the latest
+  const displayedMnemonic = latestMnemonic;
+  const displayedExplanation = latestExplanation;
+  const displayedExample = latestExample;
 
   // Fetch card data
   useEffect(() => {
@@ -110,6 +172,69 @@ export default function CardDetailPage() {
       fetchCard();
     }
   }, [params.cardId]);
+
+  // Handle generating new responses
+  const handleGenerateMnemonic = async () => {
+    if (!card) return;
+    
+    try {
+      setGeneratingType('mnemonic');
+      await generateMnemonic(params.cardId, 'visualization');
+      await mutateResponses();
+    } catch (error) {
+      console.error("Error generating mnemonic:", error);
+    } finally {
+      setGeneratingType(null);
+    }
+  };
+
+  const handleGenerateExplanation = async () => {
+    if (!card) return;
+    
+    try {
+      setGeneratingType('explanation');
+      await generateExplanation(params.cardId, 'basic');
+      await mutateResponses();
+    } catch (error) {
+      console.error("Error generating explanation:", error);
+    } finally {
+      setGeneratingType(null);
+    }
+  };
+
+  const handleGenerateExamples = async () => {
+    if (!card) return;
+    
+    try {
+      setGeneratingType('example');
+      await generateExamples(params.cardId, 1);
+      await mutateResponses();
+    } catch (error) {
+      console.error("Error generating examples:", error);
+    } finally {
+      setGeneratingType(null);
+    }
+  };
+
+  // Handle pinning/unpinning responses
+  const handleTogglePin = async (response: LLMResponse) => {
+    try {
+      await updateLLMResponse(response.id, !response.is_pinned);
+      await mutateResponses();
+    } catch (error) {
+      console.error("Error updating response:", error);
+    }
+  };
+
+  // Handle deleting responses
+  const handleDeleteResponse = async (responseId: string) => {
+    try {
+      await deleteLLMResponse(responseId);
+      await mutateResponses();
+    } catch (error) {
+      console.error("Error deleting response:", error);
+    }
+  };
 
   // Get front and back media
   const frontMedia = card?.media?.filter(m => m.side.toLowerCase() === "front");
@@ -171,19 +296,50 @@ export default function CardDetailPage() {
                 {card.front_content}
               </h1>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <Button
-                  variant="outline"
-                  className="text-purple-300 border-b-3 rounded-full hover:text-primary-blue/90 text-xs"
-                >
-                  get cheat code
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-secondary-foreground hover:text-foreground flex-shrink-0"
-                >
-                  <MoreVertical className="h-5 w-5" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="relative rounded-full border-2 border-purple-500/70 px-6 py-2 text-sm font-medium shadow-sm shadow-orange-500/20 text-primary-foreground"
+                      disabled={!!generatingType}
+                    >
+                      {generatingType ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4 text-primary-foreground" />
+                          <span className="font-semibold">Ask AI</span>
+                        </>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem 
+                      className="cursor-pointer"
+                      onClick={handleGenerateMnemonic}
+                      disabled={!!generatingType}
+                    >
+                      Generate Mnemonic
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="cursor-pointer"
+                      onClick={handleGenerateExamples}
+                      disabled={!!generatingType}
+                    >
+                      Provide Example
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="cursor-pointer"
+                      onClick={handleGenerateExplanation}
+                      disabled={!!generatingType}
+                    >
+                      Explain Like I'm 5
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
             
@@ -216,7 +372,6 @@ export default function CardDetailPage() {
             
             {/* Answer section */}
             <div className="mt-8">
-              {/* <h2 className="text-lg font-semibold text-foreground mb-4">Answer:</h2> */}
               <div className="text-foreground leading-relaxed">
                 {card.back_content}
               </div>
@@ -252,53 +407,53 @@ export default function CardDetailPage() {
 
           {/* Right Side - AI Generated Content */}
           <div className="p-8 space-y-6 h-full overflow-auto">
-            <InfoBox title="Mnemonic device" onClose={() => {}}>
-              <div className="space-y-1">
-                {/* This would be AI-generated content */}
-                <p>
-                  <span className="">B</span>ig
-                </p>
-                <p>
-                  <span className="">I</span>deas
-                </p>
-                <p>
-                  <span className="">O</span>f
-                </p>
-                <p>
-                  <span className="">L</span>ife
-                </p>
-                <p>
-                  <span className="">O</span>rganized
-                </p>
-                <p>
-                  <span className="">G</span>enetically
-                </p>
-                <p>
-                  <span className="">Y</span>early
-                </p>
+            {loadingResponses ? (
+              <div className="flex items-center justify-center h-32">
+                <Loader2 className="h-6 w-6 animate-spin text-primary-green" />
               </div>
-            </InfoBox>
+            ) : (
+              <>
+                {displayedMnemonic && (
+                  <InfoBox 
+                    title="Mnemonic device"
+                    onDelete={() => handleDeleteResponse(displayedMnemonic.id)}
+                  >
+                    <div className="space-y-1 whitespace-pre-wrap">
+                      {displayedMnemonic.content}
+                    </div>
+                  </InfoBox>
+                )}
 
-            <InfoBox title="Example">
-              <p className="text-foreground leading-relaxed">
-                {/* This would be AI-generated content */}
-                Cell Theory – Example: The human body is made up of trillions of
-                cells, such as muscle cells and nerve cells. Each cell performs specific
-                functions while working together to maintain the organism.
-              </p>
-            </InfoBox>
-            
-            <InfoBox title="Additional Notes">
-              <p className="text-foreground leading-relaxed">
-                {/* This would be AI-generated content */}
-                Key concepts to remember:
-                <ul className="list-disc pl-5 mt-2 space-y-1">
-                  <li>The question focuses on the definition of biology</li>
-                  <li>Biology studies living organisms and their interactions</li>
-                  <li>Important branches include ecology, genetics, and physiology</li>
-                </ul>
-              </p>
-            </InfoBox>
+                {displayedExample && (
+                  <InfoBox 
+                    title="Example"
+                    onDelete={() => handleDeleteResponse(displayedExample.id)}
+                  >
+                    <div className="text-foreground leading-relaxed whitespace-pre-wrap">
+                      {displayedExample.content}
+                    </div>
+                  </InfoBox>
+                )}
+                
+                {displayedExplanation && (
+                  <InfoBox 
+                    title="Explanation"
+                    onDelete={() => handleDeleteResponse(displayedExplanation.id)}
+                  >
+                    <div className="text-foreground leading-relaxed whitespace-pre-wrap">
+                      {displayedExplanation.content}
+                    </div>
+                  </InfoBox>
+                )}
+
+                {!displayedMnemonic && !displayedExample && !displayedExplanation && (
+                  <div className="flex flex-col items-center mt-48 justify-center h-32 text-secondary-foreground">
+                    <p>No AI-generated content yet.</p>
+                    <p className="mt-2">Use the "Ask AI" button to generate content.</p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
