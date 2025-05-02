@@ -51,6 +51,7 @@ export default function QuizPage(): React.ReactElement {
   const [questionStartTime, setQuestionStartTime] = useState<Date | null>(null);
   const [totalTimeTaken, setTotalTimeTaken] = useState<number>(0);
   const [questionsList, setQuestionsList] = useState<QuizQuestionResponse[] | null>(null);
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
 
   // Load session
   const { session, isLoading: isSessionLoading, mutate: mutateSession } = useQuizSession(sessionId as UUID | null);
@@ -65,7 +66,8 @@ export default function QuizPage(): React.ReactElement {
     }
   }, [questions, questionsList]);
 
-  const isLoading: boolean = isSessionLoading || (areQuestionsLoading && !questionsList);
+  // Determine overall loading state
+  const isLoading: boolean = isInitialLoading || isSessionLoading || (areQuestionsLoading && !questionsList);
 
   const currentColor: string = colors[currentQuestionIndex % colors.length];
   const currentQuestion: QuizQuestionResponse | null = questionsList && questionsList.length > 0 
@@ -101,11 +103,17 @@ export default function QuizPage(): React.ReactElement {
       } catch (error) {
         console.error('Failed to start quiz session:', error);
         router.push('/decks');
+      } finally {
+        // Set initial loading to false when done
+        setIsInitialLoading(false);
       }
     };
 
     if (!sessionId && deckId) {
       initQuiz();
+    } else {
+      // If we already have a sessionId, we're not in initial loading
+      setIsInitialLoading(false);
     }
   }, [deckId, difficulty, router, sessionId]);
 
@@ -196,15 +204,20 @@ export default function QuizPage(): React.ReactElement {
     try {
       // Calculate final stats
       const totalQuestions: number = questionsList.length;
-      const accuracy: number = quizResults.attempted > 0 
-        ? quizResults.correct / quizResults.attempted 
+      
+      // Important: Use the current question index + 1 for the attempted count
+      // This ensures we count the current question that was just answered
+      const attemptedCount = currentQuestionIndex + 1;
+      
+      const accuracy: number = attemptedCount > 0 
+        ? quizResults.correct / attemptedCount 
         : 0;
       
       // Update the session with final results
       const sessionUpdateData: Partial<QuizSessionUpdate> = {
         end_time: new Date().toISOString(),
         correct_answers: quizResults.correct,
-        total_questions: totalQuestions, // Adding the required field
+        total_questions: totalQuestions,
         accuracy,
         time_taken: totalTimeTaken,
         points_earned: quizResults.correct * 10 // Simple scoring
@@ -212,14 +225,14 @@ export default function QuizPage(): React.ReactElement {
       
       await updateQuizSession(sessionId as UUID, sessionUpdateData);
       
-      // Redirect to results page - including all important data
+      // Redirect to results page - using the calculated attempted count
       router.push(
-        `/quiz/results?sessionId=${sessionId}&attempted=${quizResults.attempted}&correct=${quizResults.correct}`
+        `/quiz/results?sessionId=${sessionId}&attempted=${attemptedCount}&correct=${quizResults.correct}`
       );
     } catch (error) {
       console.error('Failed to complete quiz:', error);
     }
-  }, [sessionId, startTime, questionsList, quizResults, totalTimeTaken, router]);
+  }, [sessionId, startTime, questionsList, quizResults, totalTimeTaken, router, currentQuestionIndex]);
 
   // Handle exit - this combines early exit and normal completion
   const handleExit = async (): Promise<void> => {
@@ -228,15 +241,22 @@ export default function QuizPage(): React.ReactElement {
         // Important: Complete the quiz properly to save progress
         // For exit, we need to make sure all required fields are included
         const totalQuestions: number = questionsList.length;
-        const accuracy: number = quizResults.attempted > 0 
-          ? quizResults.correct / quizResults.attempted 
+        
+        // Use the current question index + 1 for attempted count if an answer was revealed
+        // Otherwise use the quizResults.attempted value
+        const attemptedCount = isAnswerRevealed 
+          ? currentQuestionIndex + 1 
+          : quizResults.attempted;
+        
+        const accuracy: number = attemptedCount > 0 
+          ? quizResults.correct / attemptedCount 
           : 0;
         
         // Update the session with final results
         const sessionUpdateData: Partial<QuizSessionUpdate> = {
           end_time: new Date().toISOString(),
           correct_answers: quizResults.correct,
-          total_questions: totalQuestions, // Making sure this required field is included
+          total_questions: totalQuestions,
           accuracy,
           time_taken: totalTimeTaken,
           points_earned: quizResults.correct * 10 // Simple scoring
@@ -244,15 +264,20 @@ export default function QuizPage(): React.ReactElement {
         
         await updateQuizSession(sessionId as UUID, sessionUpdateData);
         
-        // Redirect to results page
+        // Redirect to results page with the calculated attempted count
         router.push(
-          `/quiz/results?sessionId=${sessionId}&attempted=${quizResults.attempted}&correct=${quizResults.correct}`
+          `/quiz/results?sessionId=${sessionId}&attempted=${attemptedCount}&correct=${quizResults.correct}`
         );
       } catch (error) {
         console.error('Error completing quiz on exit:', error);
         // If there's an error, still redirect to avoid users getting stuck
         if (quizResults.attempted > 0) {
-          router.push(`/quiz/results?sessionId=${sessionId}&attempted=${quizResults.attempted}&correct=${quizResults.correct}`);
+          // Use the same logic for attempted count here too
+          const attemptedCount = isAnswerRevealed 
+            ? currentQuestionIndex + 1 
+            : quizResults.attempted;
+            
+          router.push(`/quiz/results?sessionId=${sessionId}&attempted=${attemptedCount}&correct=${quizResults.correct}`);
         } else {
           router.push('/decks');
         }
@@ -266,8 +291,20 @@ export default function QuizPage(): React.ReactElement {
     return (
       <div className="min-h-screen bg-background p-6 md:p-12 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Preparing your quiz...</h2>
-          <p>Loading questions with Gemini-powered options</p>
+          <h2 className="text-2xl font-bold mb-6">Preparing your quiz...</h2>
+          
+          {/* Flashcard-style loading animation */}
+          <div className="relative w-64 h-64 mx-auto mb-8">
+            <div className="absolute inset-0 bg-primary-blue rounded-xl shadow-lg transform rotate-3 animate-pulse"></div>
+            <div className="absolute inset-0 bg-primary-orange rounded-xl shadow-lg transform -rotate-3 animate-pulse" style={{animationDelay: "0.2s"}}></div>
+            <div className="absolute inset-0 bg-primary-green rounded-xl shadow-lg transform rotate-1 animate-pulse" style={{animationDelay: "0.4s"}}></div>
+            
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-12 border-4 border-muted border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          </div>
+          
+          <p className="text-secondary-foreground">Loading questions with AI-powered options</p>
         </div>
       </div>
     );
@@ -277,9 +314,10 @@ export default function QuizPage(): React.ReactElement {
     return (
       <div className="min-h-screen bg-background p-6 md:p-12 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">No questions available</h2>
-          <Button onClick={() => router.push('/decks')}>
-            Return to Decks
+          <h2 className="text-2xl font-bold mb-4">No questions available for this deck</h2>
+          <p className="text-secondary-foreground mb-6">Try another deck or add more cards to this deck.</p>
+          <Button onClick={() => router.push('/quiz')}>
+            Return to Quiz Selection
           </Button>
         </div>
       </div>
@@ -343,6 +381,13 @@ export default function QuizPage(): React.ReactElement {
       
       <div className="w-full flex justify-between mt-8">
         <Button
+          onClick={() => setShowExitDialog(true)}
+          variant="outline"
+          className="font-semibold border-b- px-4 py-2 text-md h-auto  hover:shadow-xl transition-all"
+        >
+          Exit Quiz
+        </Button>
+        <Button
           onClick={isAnswerRevealed ? handleContinue : handleCheck}
           disabled={selectedAnswer === null && !isAnswerRevealed}
           style={{ backgroundColor: currentColor }}
@@ -351,13 +396,6 @@ export default function QuizPage(): React.ReactElement {
           {isAnswerRevealed ? 
             (currentQuestionIndex < questionsList.length - 1 ? "Next Question" : "Finish Quiz") : 
             "Check Answer"}
-        </Button>
-        <Button
-          onClick={() => setShowExitDialog(true)}
-          variant="outline"
-          className="font-semibold px-4 py-2 text-md h-auto shadow-lg hover:shadow-xl transition-all"
-        >
-          Exit Quiz
         </Button>
       </div>
 

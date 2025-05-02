@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useCards } from "@/hooks/api/use-card";
 import {
   Select,
   SelectContent,
@@ -19,8 +20,9 @@ import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
 
-export default function AddNotePage() {
+export default function AddNotePage( ) {
   const { toast } = useToast();
+  const params = useParams<{deckId: string}>();
   const router = useRouter();
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
@@ -35,6 +37,8 @@ export default function AddNotePage() {
   const [answerAudioUrl, setAnswerAudioUrl] = useState<string | null>(null);
   const [activeMediaSection, setActiveMediaSection] = useState<"question" | "answer">("answer");
   
+  const { mutate } = useCards(params.deckId);
+
   // Audio recording states
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSection, setRecordingSection] = useState<"question" | "answer" | null>(null);
@@ -51,7 +55,7 @@ export default function AddNotePage() {
   const answerInputRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const params = useParams<{deckId: string}>();
+
   const {deck} = useDeck(params.deckId);
   const {decks} = useDecks();
   const [selectedDeck, setSelectedDeck] = useState(params.deckId);
@@ -178,6 +182,7 @@ export default function AddNotePage() {
       });
       return;
     }
+
     
     setIsSubmitting(true);
     
@@ -213,6 +218,7 @@ export default function AddNotePage() {
       }
       
       const card = await response.json();
+  
       
       // Now upload media files if they exist
       if (questionImage || answerImage || questionAudio || answerAudio) {
@@ -251,12 +257,14 @@ export default function AddNotePage() {
         // Wait for all media uploads to complete
         await Promise.all(uploadPromises);
       }
+      mutate();
       
       toast({
         // title: "Success",
         title: "Card added successfully",
         variant: "default",
       });
+     
       
       // Clear form fields after successful submission
       setQuestion("");
@@ -270,6 +278,7 @@ export default function AddNotePage() {
       setAnswerAudio(null);
       setAnswerAudioUrl(null);
       
+
       // After successful submission:
       // router.push(`/decks/${selectedDeck}`);
       
@@ -319,6 +328,7 @@ export default function AddNotePage() {
       }
       
       return response.json();
+
     } catch (error) {
       console.error(`Error uploading ${side.toLowerCase()} media:`, error);
       throw error;
@@ -709,7 +719,7 @@ export default function AddNotePage() {
             type="button"
             variant="outline"
             className="flex-1 border-border hover:bg-muted"
-            onClick={() => router.back()}
+            onClick={() =>   router.back()}
             disabled={isSubmitting}
           >
             Close

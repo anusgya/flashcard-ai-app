@@ -323,12 +323,12 @@ export function Flashcard(props: FlashcardProps) {
           </Button>
         ) : (
           <>
-            <div className="flex gap-4 text-sm text-secondary-foreground">
+            {/* <div className="flex gap-4 text-sm text-secondary-foreground">
               <span>&lt;10m</span>
               <span>4d</span>
               <span>1.3mo</span>
               <span>3.1mo</span>
-            </div>
+            </div> */}
             <div className="flex gap-2">
               <Button
                 variant="outline"

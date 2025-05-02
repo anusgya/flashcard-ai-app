@@ -23,15 +23,15 @@ export function ExitDialog({ isOpen, onConfirm, onCancel }: ExitDialogProps) {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>End Quiz?</AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDescription className="text-secondary-foreground">
             Are you sure you want to end this quiz? Your progress will be saved.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>
+          <AlertDialogCancel className="border-2" onClick={onCancel}>
             Continue Quiz
           </AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>End Quiz</AlertDialogAction>
+          <AlertDialogAction className="bg-primary-green text-muted hover:border-b-0" onClick={onConfirm}>End Quiz</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

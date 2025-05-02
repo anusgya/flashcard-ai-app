@@ -17,6 +17,22 @@ export function useDecks() {
   };
 }
 
+
+export function useRecentDecks() {
+  const { data, error, isLoading, mutate } = useSWR('/api/study/recent', fetcher, {
+    revalidateOnFocus: false,
+    revalidateIfStale: true,
+    dedupingInterval: 60000, // 1 minute
+  });
+  
+  return {
+    recentDecks: data,
+    isLoading,
+    isError: error,
+    mutate,
+  };
+}
+
 // Get a specific deck by ID
 export function useDeck(deckId: string) {
   const { data, error, isLoading, mutate } = useSWR(

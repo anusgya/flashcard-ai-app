@@ -1,6 +1,6 @@
 import useSWR from 'swr';
 import { fetcher, fetchWithAuth } from './fetchWithAuth'; // Assuming fetchWithAuth handles token injection
-import { TimeRange, ResponseQuality, ConfidenceLevel } from '@/enums'; // Adjust path as needed
+import { TimeRange, ResponseQuality, ConfidenceLevel, CardState } from '@/enums'; // Adjust path as needed
 import { UUID } from 'crypto'; // Or use 'string' if UUIDs are treated as strings
 
 
@@ -53,10 +53,12 @@ interface StudyRecordResponse extends StudyRecordCreate {
 }
 
 
+// Updated to match backend schema
 interface DueCardsResponse {
   due_now: number;
   new_cards: number;
-  due_later_today: number;
+  learning_cards: number;
+  review_cards: number;
 }
 
 
@@ -70,15 +72,23 @@ interface SpacedRepetitionProgress {
     review_31_90: number;
     review_91_plus: number;
   };
+  state_distribution: {
+    new: number;
+    learning: number;
+    review: number;
+  };
   average_ease_factor: number;
 }
 
 
+// Updated NextCardResponse to include all fields from the backend
 interface NextCardResponse {
   card_id: UUID;
   due_date?: string | null; // ISO 8601 date string
-  current_streak: number;
-  total_reviews: number;
+  current_streak?: number | null;
+  total_reviews?: number | null;
+  card_state: string; // CardState enum as string
+  is_due: boolean;   // Added to match backend
 }
 
 
@@ -174,8 +184,7 @@ export async function createStudyRecord(recordData: StudyRecordCreate): Promise<
 }
 
 
-// Get due cards count
-// NOTE: This hook depends on the backend route /api/study/due/{deck_id} being active (uncommented).
+// Get due cards count - updated to match the backend response schema
 export function useDueCards(deckId: UUID | null) {
   const url = deckId ? `/api/study/due/${deckId}` : null;
 
@@ -200,8 +209,7 @@ export function useDueCards(deckId: UUID | null) {
 }
 
 
-// Get spaced repetition progress stats for a deck
-// NOTE: This hook depends on the backend route /api/study/progress/{deck_id} being active (uncommented).
+// Get spaced repetition progress stats for a deck - updated to include state_distribution
 export function useSpacedRepetitionProgress(deckId: UUID | null) {
   const url = deckId ? `/api/study/progress/${deckId}` : null;
 
@@ -226,8 +234,7 @@ export function useSpacedRepetitionProgress(deckId: UUID | null) {
 }
 
 
-// Get the next card to study in a deck
-// Get the next card to study in a deck
+// Get the next card to study in a deck - updated to match the backend response schema
 export function useNextCard(deckId: UUID | null) {
   // Define error type for proper handling
   interface ErrorWithResponse extends Error {
@@ -312,4 +319,15 @@ export function useStudyStats(deckId: UUID | null) {
     error,
     mutate,
   };
+}
+
+// Function to update card states across the system
+export async function updateCardStates(deckId?: UUID): Promise<{ success: boolean; message: string }> {
+  const url = deckId 
+    ? `/api/study/update-card-states?deck_id=${deckId}` 
+    : '/api/study/update-card-states';
+  
+  return fetchWithAuth(url, {
+    method: 'POST',
+  });
 }

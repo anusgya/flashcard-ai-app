@@ -1,67 +1,119 @@
-"use client";
+"use client"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { useRouter } from "next/navigation"
+import { AvatarSelection } from "./avatar-selection"
+import { ResetPassword } from "./reset-password"
+import { ChangeEmail } from "./change-email"
+import { ChangeUsername } from "./change-username"
+import { DailyLimits } from "./daily-limits"
+import { motion } from "framer-motion"
 
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { useRouter } from "next/navigation";
-// import { AvatarSelection } from "./settings/avatar-selection";
-import { AvatarSelection } from "./avatar-selection";
-import { ResetPassword } from "./reset-password";
-import { ChangeEmail } from "./change-email";
-import { DailyLimits } from "./daily-limits";
 
 export default function Settings() {
-  const router = useRouter();
+  const router = useRouter()
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  }
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } },
+  }
 
   return (
-    <div className="min-h-screen bg-background">
+    <motion.div
+      className="min-h-screen bg-background"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       <div className="w-full space-y-6 py-16 px-12">
         {/* Header */}
+        <div className="flex gap-2 flex-col ">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-foreground text-2xl font-bold"
+        >
+        Settings
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="font-fragment-mono text-sm text-secondary-foreground"
+        >
+        Manage your account here
+        </motion.div>
+        </div>
 
-        <div className="text-foreground text-xl font-semibold "> Settings</div>
-        <Accordion type="single" collapsible className="space-y-4">
-          <AccordionItem value="avatar" className="border rounded-lg">
-            <AccordionTrigger className="px-4 hover:no-underline">
-              Avatar Selection
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4">
-              <AvatarSelection />
-            </AccordionContent>
-          </AccordionItem>
+        <motion.div variants={container} initial="hidden" animate="show">
+          <Accordion type="single" collapsible className="space-y-4">
+            <motion.div variants={item}>
+              <AccordionItem value="avatar" className="border rounded-lg">
+                <AccordionTrigger className="px-4 hover:no-underline  font-semibold text-base"> 🦊  Select Avatar</AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <AvatarSelection />
+                </AccordionContent>
+              </AccordionItem>
+            </motion.div>
 
-          <AccordionItem value="password" className="border rounded-lg">
-            <AccordionTrigger className="px-4 hover:no-underline">
-              Reset Password
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4">
-              <ResetPassword />
-            </AccordionContent>
-          </AccordionItem>
+            <motion.div variants={item}>
+              <AccordionItem value="username" className="border rounded-lg">
+                <AccordionTrigger className="px-4 hover:no-underline  font-semibold text-base">
+                 👤  Change Username
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <ChangeUsername />
+                </AccordionContent>
+              </AccordionItem>
+            </motion.div>
 
-          <AccordionItem value="email" className="border rounded-lg">
-            <AccordionTrigger className="px-4 hover:no-underline">
-              Change Email
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4">
-              <ChangeEmail />
-            </AccordionContent>
-          </AccordionItem>
 
-          <AccordionItem value="limits" className="border rounded-lg">
-            <AccordionTrigger className="px-4 hover:no-underline">
-              Set Daily Limits
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4">
-              <DailyLimits />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+
+            <motion.div variants={item}>
+              <AccordionItem value="email" className="border rounded-lg">
+                <AccordionTrigger className="px-4 hover:no-underline  font-semibold text-base">
+                 ✉️  Change Email
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <ChangeEmail />
+                </AccordionContent>
+              </AccordionItem>
+            </motion.div>
+            <motion.div variants={item}>
+              <AccordionItem value="password" className="border rounded-lg">
+                <AccordionTrigger className="px-4 hover:no-underline  font-semibold text-base">🔑  Reset Password</AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <ResetPassword />
+                </AccordionContent>
+              </AccordionItem>
+            </motion.div>
+
+
+
+      
+
+
+            {/* <motion.div variants={item}>
+              <AccordionItem value="limits" className="border rounded-lg">
+                <AccordionTrigger className="px-4 hover:no-underline">Set Daily Limits</AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <DailyLimits />
+                </AccordionContent>
+              </AccordionItem>
+            </motion.div> */}
+          </Accordion>
+        </motion.div>
       </div>
-    </div>
-  );
+    </motion.div>
+  )
 }

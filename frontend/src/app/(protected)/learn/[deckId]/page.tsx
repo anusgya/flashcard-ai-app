@@ -182,10 +182,10 @@ export default function LearnPage() {
         <p className="text-secondary-foreground">You've completed this study session.</p>
         <Button
           variant="outline"
-          onClick={() => router.push(`/learn`)}
+          onClick={() => router.back()}
           className="mt-4 border-[1.5px]"
         >
-          Return to Decks
+          Return to decks
         </Button>
       </div>
     );

@@ -21,7 +21,7 @@ export default function LoginPage() {
     
     try {
       console.log(email, password);
-      const response = await fetch("http://localhost:8000/auth/token", {
+      const response = await fetch("http://localhost:8000/api/auth/token", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",

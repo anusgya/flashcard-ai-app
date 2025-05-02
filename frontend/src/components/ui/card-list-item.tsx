@@ -129,13 +129,13 @@ export function CardListItem(props: CardListItemProps) {
     <div className="relative">
       <Link
         href={`/decks/${deck_id}/cards/${id}`}
-        className="flex items-center justify-between px-6 py-3 rounded-lg border border-border hover:bg-secondary border-b-[3px] cursor-pointer transition-colors"
+        className="flex items-center justify-between px-6 py-3 rounded-lg border border-border hover:bg-secondary  cursor-pointer transition-colors"
       >
         <div className="flex items-start gap-3">
           {frontImage && (
             <div className="relative h-16 w-16 rounded-md overflow-hidden flex-shrink-0 border border-border">
               <Image 
-                src={`http://localhost:8000/${frontImage.file_path}`}
+                src={`http://localhost:8000/${frontImage.file_path.replace(/\\/g, '/')}`}
                 alt="Card image"
                 fill
                 style={{ objectFit: 'cover' }}

@@ -51,6 +51,18 @@ export async function createCard(cardData: any) {
   });
 }
 
+export async function generateCards(generationRequest: {
+  deck_id: string;
+  source_text: string;
+  num_flashcards: number;
+  topic?: string;
+}) {
+  return fetchWithAuth(`/api/cards/generate`, {
+    method: 'POST',
+    body: JSON.stringify(generationRequest),
+  });
+}
+
 // Add PUT functionality for updating an existing card
 export async function updateCard(cardId: string, cardData: any) {
   return fetchWithAuth(`/api/cards/${cardId}`, {
@@ -71,5 +83,24 @@ export async function importCards(deckId: string, cardsData: any[]) {
   return fetchWithAuth(`/api/decks/${deckId}/cards/import`, {
     method: 'POST',
     body: JSON.stringify(cardsData),
+  });
+}
+
+export async function addCardMedia(cardId: string, mediaFile: File, side: 'front' | 'back') {
+  const formData = new FormData();
+  formData.append('media_file', mediaFile);
+  formData.append('side', side);
+  
+  return fetchWithAuth(`/api/cards/${cardId}/media`, {
+    method: 'POST',
+    body: formData,
+    // Don't set Content-Type header when using FormData, browser will set it with boundary
+  });
+}
+
+// Delete media from a card
+export async function deleteCardMedia(cardId: string, mediaId: string) {
+  return fetchWithAuth(`/api/cards/${cardId}/media/${mediaId}`, {
+    method: 'DELETE',
   });
 }

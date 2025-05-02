@@ -23,3 +23,9 @@ export enum QuizDifficulty {
   MEDIUM = "medium",
   HARD = "hard"
 }
+
+export enum CardState {
+  NEW = "new",
+  LEARNING = "learning",
+  REVIEW = "review"
+}

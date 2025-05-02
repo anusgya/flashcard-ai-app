@@ -179,7 +179,7 @@ export default function CardDetailPage() {
     
     try {
       setGeneratingType('mnemonic');
-      await generateMnemonic(params.cardId, 'visualization');
+      await generateMnemonic(params.cardId,"");
       await mutateResponses();
     } catch (error) {
       console.error("Error generating mnemonic:", error);

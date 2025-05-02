@@ -30,49 +30,49 @@ export default function RegisterPage() {
 
     setIsLoading(true);
 
-// Inside handleSubmit function:
-try {
-  const response = await fetch("http://localhost:8000/auth/register", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      username: formData.username,
-      email: formData.email,
-      password: formData.password,
-    }),
-  });
+    // Inside handleSubmit function:
+    try {
+      const response = await fetch("http://localhost:8000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
-  // Read the response body ONCE and store it
-  const data = await response.json();
+      // Read the response body ONCE and store it
+      const data = await response.json();
 
-  if (!response.ok) {
-    toast({
-      title: "Registration failed",
-      description: data.detail || "Something went wrong",
-      variant: "destructive",
-    });
-    // // Don't throw an error here if you're handling it already
-    // console.error("Registration failed:", data);
-  } else {
-    toast({
-      title: "Registration successful",
-      description: "Please login to continue",
-      variant: "default",
-    });
-    router.push("/login");
-  }
-} catch (err) {
-  console.error(err);
-  toast({
-    title: "Registration failed",
-    description: "An unexpected error occurred",
-    variant: "destructive",
-  });
-} finally {
-  setIsLoading(false);
-}
+      if (!response.ok) {
+        toast({
+          title: "Registration failed",
+          description: data.detail || "Something went wrong",
+          variant: "destructive",
+        });
+        // // Don't throw an error here if you're handling it already
+        // console.error("Registration failed:", data);
+      } else {
+        toast({
+          title: "Registration successful",
+          description: "Please login to continue",
+          variant: "default",
+        });
+        router.push("/login");
+      }
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Registration failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

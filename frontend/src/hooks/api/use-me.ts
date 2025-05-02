@@ -1,9 +1,9 @@
 import useSWR from 'swr';
-import { fetcher } from './fetchWithAuth';
+import { fetcher, fetchWithAuth } from './fetchWithAuth';
 
 // Get the currently authenticated user
 export default function useMe() {
-  const { data, error, isLoading, mutate } = useSWR('/api/auth/me', fetcher, {
+  const { data, error, isLoading, mutate } = useSWR('/api/users/me', fetcher, {
     revalidateOnFocus: false,
     revalidateIfStale: true,
     dedupingInterval: 60000,
@@ -17,27 +17,28 @@ export default function useMe() {
   };
 }
 
-
 // Function to update user profile
-// export async function updateUserProfile(userData: {
-//   name?: string;
-//   email?: string;
-//   bio?: string;
-//   // Add other fields as needed
-// }) {
-//   return fetchWithAuth('/api/auth/me', {
-//     method: 'PATCH',
-//     body: JSON.stringify(userData),
-//   });
-// }
+export async function updateUserProfile(userData: {
+  username?: string;
+  email?: string;
+  password?: string;
+  settings?: any;
+  avatar?: string;
+}) {
+  return fetchWithAuth('/api/users/me', {
+    method: 'PUT',
+    body: JSON.stringify(userData),
+  });
+}
 
-// // Function to change password
-// export async function changePassword(passwordData: {
-//   current_password: string;
-//   new_password: string;
-// }) {
-//   return fetchWithAuth('/api/auth/password', {
-//     method: 'POST',
-//     body: JSON.stringify(passwordData),
-//   });
-// }
+// Function to update just the avatar
+export async function updateUserAvatar(avatarPath: string) {
+  return updateUserProfile({ avatar: avatarPath });
+}
+
+// Function to change password
+export async function changePassword(passwordData: {
+  password: string;
+}) {
+  return updateUserProfile({ password: passwordData.password });
+}
