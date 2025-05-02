@@ -33,6 +33,30 @@ class StudySessionUpdate(BaseModel):
     accuracy: confloat(ge=0.0, le=1.0)
     points_earned: conint(ge=0)
 
+class StatusResponse(BaseModel):
+    success: bool
+    message: str
+
+class DueCardsResponse(BaseModel):
+    due_now: int
+    new_cards: int
+    learning_cards: int
+    review_cards: int
+
+class NextCardResponse(BaseModel):
+    card_id: str
+    due_date: Optional[datetime]
+    current_streak: Optional[int] = None
+    total_reviews: Optional[int] = None
+    card_state: str
+
+# Update your SpacedRepetitionProgress schema
+class SpacedRepetitionProgress(BaseModel):
+    total_cards: int
+    interval_distribution: dict
+    state_distribution: dict  # Add this field
+    average_ease_factor: float
+
 class StudySessionResponse(StudySessionBase):
     id: UUID4
     user_id: UUID4
@@ -74,8 +98,10 @@ class StudyRecordResponse(StudyRecordBase):
 class NextCardResponse(BaseModel):
     card_id: UUID4
     due_date: Optional[datetime]
-    current_streak: int = Field(default=0, ge=0)
-    total_reviews: int = Field(default=0, ge=0)
+    current_streak: Optional[int] = None
+    total_reviews: Optional[int] = None
+    card_state: str
+    is_due: bool
 
 class StudySessionStats(BaseModel):
     total_sessions: int
@@ -85,10 +111,6 @@ class StudySessionStats(BaseModel):
     average_time_per_card: float
     mastery_rate: float
 
-class DueCardsResponse(BaseModel):
-    due_now: int
-    new_cards: int
-    due_later_today: int
 
 class SpacedRepetitionProgress(BaseModel):
     total_cards: int

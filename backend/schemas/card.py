@@ -1,7 +1,9 @@
 from pydantic import BaseModel, UUID4, Field, HttpUrl
 from typing import List, Optional, Union
-from enums import Enum
+from enum import Enum # Corrected import from 'enums' to 'enum'
 from datetime import datetime
+
+from sqlalchemy.engine.row import ROMappingItemsView
 
 # Enums for validation
 class DifficultyLevel(str, Enum):
@@ -14,7 +16,7 @@ class DifficultyLevel(str, Enum):
 class CardState(str, Enum):
     NEW = "new"
     LEARNING = "learning"
-    DUE = "due"
+    REVIEW = "review"
 
 class MediaType(str, Enum):
     IMAGE = "image"
@@ -45,6 +47,15 @@ class CardMediaCreate(CardMediaBase):
 class CardCreate(CardBase):
     deck_id: UUID4
     tags: Optional[List[UUID4]] = []
+
+# <<--- NEW SCHEMA START --->>
+class CardGenerationRequest(BaseModel):
+    deck_id: UUID4 = Field(..., description="The ID of the deck to add generated cards to.")
+    num_flashcards: int = Field(..., gt=0, le=50, description="Number of cards to generate (max 50).")
+    source_text: str = Field(..., description="URL or path to the pdf file")
+    topic: Optional[str] = Field(None, description="The topic of the flashcards")
+    # Add other generation parameters as needed, e.g., difficulty hint
+
 
 # Schemas for reading objects
 class CardMediaResponse(CardMediaBase):

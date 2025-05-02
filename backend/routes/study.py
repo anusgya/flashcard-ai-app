@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from sqlalchemy import func
 from datetime import datetime, timedelta, UTC
+from enum import Enum
 
 import models
 import schemas
 from database import get_db
-from enums import TimeRange
+from enums import TimeRange, CardState
 from auth import get_current_active_user
 
 router = APIRouter(
@@ -15,6 +16,32 @@ router = APIRouter(
     tags=["study"],
     dependencies=[Depends(get_current_active_user)]
 )
+
+def determine_card_state(next_review, interval, now=None):
+    """
+    Determine the card state based on its interval and next review date.
+    
+    Args:
+        next_review (datetime): When the card is due for review next
+        interval (int): Current interval in days
+        now (datetime, optional): Current datetime for comparison
+        
+    Returns:
+        CardState: The current state of the card (NEW, LEARNING, or REVIEW)
+    """
+    if now is None:
+        now = datetime.now(tz=UTC)
+    
+    # If next_review is None, the card is new
+    if next_review is None:
+        return CardState.NEW
+    
+    # If interval is 0 or 1, card is still in learning phase
+    if interval is not None and interval <= 1:
+        return CardState.LEARNING
+    
+    # Otherwise, card is in review
+    return CardState.REVIEW
 
 @router.post("/sessions", response_model=schemas.StudySessionResponse)
 def create_study_session(
@@ -51,6 +78,33 @@ def get_study_session(
         raise HTTPException(status_code=403, detail="Not authorized to access this session")
     return session
 
+@router.get("/recent", response_model=List[schemas.DeckResponse])
+def get_recent_decks(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    # Subquery to get the most recent study session for each deck
+    # Using start_time as the indicator for when the deck was last accessed
+    subquery = db.query(
+        models.StudySession.deck_id,
+        func.max(models.StudySession.start_time).label("latest_start_time")
+    ).filter(
+        models.StudySession.user_id == current_user.id
+    ).group_by(
+        models.StudySession.deck_id
+    ).subquery()
+    
+    # Join with the decks table to get deck details
+    recent_decks = db.query(models.Deck).join(
+        subquery, models.Deck.id == subquery.c.deck_id
+    ).filter(
+        models.Deck.user_id == current_user.id  # Ensure user has access to these decks
+    ).order_by(
+        subquery.c.latest_start_time.desc()
+    ).limit(3).all()
+    
+    return recent_decks
+
 @router.put("/sessions/{session_id}", response_model=schemas.StudySessionResponse)
 def update_study_session(
     session_id: str,
@@ -71,7 +125,6 @@ def update_study_session(
     db.refresh(session)
     return session
 
-# Modify the create_study_record function to use the SM-2 algorithm
 @router.post("/records", response_model=schemas.StudyRecordResponse)
 def create_study_record(
     record: schemas.StudyRecordCreate,
@@ -120,10 +173,14 @@ def create_study_record(
     )
     db.add(db_record)
     
-    # Update the card's next review date and SR data
+    # Update the card's next review date, SR data, and state
     card.next_review = next_review
     card.current_streak = new_repetition
     card.total_reviews = card.total_reviews + 1 if card.total_reviews else 1
+    
+    # Update the card state based on next review and interval
+    now = datetime.now(tz=UTC)
+    card.card_state = determine_card_state(next_review, new_interval, now)
     
     # Update success rate based on response quality
     is_successful = record.response_quality in ["good", "perfect"]
@@ -146,13 +203,12 @@ def create_study_record(
     db.refresh(db_record)
     return db_record
 
-# Add a new route to get due cards count
-# @router.get("/due/{deck_id}", response_model=schemas.CardResponse)
-# def get_due_cards_count(
-#     deck_id: str,
-#     db: Session = Depends(get_db),
-#     current_user: models.User = Depends(get_current_active_user)
-# ):
+@router.get("/due/{deck_id}", response_model=schemas.DueCardsResponse)
+def get_due_cards_count(
+    deck_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
     # Verify deck access
     deck = db.query(models.Deck).filter(models.Deck.id == deck_id).first()
     if not deck:
@@ -160,31 +216,41 @@ def create_study_record(
     if not deck.is_public and deck.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to access this deck")
 
-    # Count cards due for review
     now = datetime.now(tz=UTC)
-    due_count = db.query(func.count(models.Card.id)).filter(
+    
+    # Count cards by state and due status
+    new_count = db.query(func.count(models.Card.id)).filter(
         models.Card.deck_id == deck_id,
+        models.Card.card_state == CardState.NEW
+    ).scalar() or 0
+    
+    learning_due_count = db.query(func.count(models.Card.id)).filter(
+        models.Card.deck_id == deck_id,
+        models.Card.card_state == CardState.LEARNING,
         models.Card.next_review <= now
     ).scalar() or 0
     
-    # Count new cards (never studied)
-    new_count = db.query(func.count(models.Card.id)).filter(
+    review_due_count = db.query(func.count(models.Card.id)).filter(
         models.Card.deck_id == deck_id,
-        models.Card.next_review == None
+        models.Card.card_state == CardState.REVIEW,
+        models.Card.next_review <= now
     ).scalar() or 0
     
-    # Count cards due later today
-    end_of_day = now.replace(hour=23, minute=59, second=59)
-    due_later_count = db.query(func.count(models.Card.id)).filter(
+    learning_count = db.query(func.count(models.Card.id)).filter(
         models.Card.deck_id == deck_id,
-        models.Card.next_review > now,
-        models.Card.next_review <= end_of_day
+        models.Card.card_state == CardState.LEARNING
+    ).scalar() or 0
+    
+    review_count = db.query(func.count(models.Card.id)).filter(
+        models.Card.deck_id == deck_id,
+        models.Card.card_state == CardState.REVIEW
     ).scalar() or 0
     
     return schemas.DueCardsResponse(
-        due_now=due_count,
+        due_now=learning_due_count + review_due_count,
         new_cards=new_count,
-        due_later_today=due_later_count
+        learning_cards=learning_count,
+        review_cards=review_count
     )
 
 # Add a helper function to calculate points based on response quality and time
@@ -201,13 +267,12 @@ def calculate_points(response_quality: str, time_taken: int) -> int:
     
     return base_points + time_bonus
 
-# Add a route to get spaced repetition progress for a deck
-# @router.get("/progress/{deck_id}", response_model=schemas.SpacedRepetitionProgress)
-# def get_spaced_repetition_progress(
-#     deck_id: str,
-#     db: Session = Depends(get_db),
-#     current_user: models.User = Depends(get_current_active_user)
-# ):
+@router.get("/progress/{deck_id}", response_model=schemas.SpacedRepetitionProgress)
+def get_spaced_repetition_progress(
+    deck_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
     # Verify deck access
     deck = db.query(models.Deck).filter(models.Deck.id == deck_id).first()
     if not deck:
@@ -228,11 +293,26 @@ def calculate_points(response_quality: str, time_taken: int) -> int:
         "review_91_plus": 0
     }
     
+    # Count cards by state
+    states = {
+        "new": 0,
+        "learning": 0,
+        "review": 0
+    }
+    
     # Calculate average ease factor
     total_ease = 0
     cards_with_ease = 0
     
     for card in cards:
+        # Count by state
+        if card.card_state == CardState.NEW:
+            states["new"] += 1
+        elif card.card_state == CardState.LEARNING:
+            states["learning"] += 1
+        elif card.card_state == CardState.REVIEW:
+            states["review"] += 1
+            
         # Get the latest study record for this card
         latest_record = db.query(models.StudyRecord).filter(
             models.StudyRecord.card_id == card.id
@@ -264,6 +344,7 @@ def calculate_points(response_quality: str, time_taken: int) -> int:
     return schemas.SpacedRepetitionProgress(
         total_cards=len(cards),
         interval_distribution=intervals,
+        state_distribution=states,
         average_ease_factor=avg_ease
     )
 
@@ -273,38 +354,55 @@ def get_next_card(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):
-    # Verify deck access
+    # ✅ Step 1: Verify deck access
     deck = db.query(models.Deck).filter(models.Deck.id == deck_id).first()
     if not deck:
         raise HTTPException(status_code=404, detail="Deck not found")
     if not deck.is_public and deck.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to access this deck")
 
-    now = datetime.utcnow() # Use UTC consistently
+    now = datetime.now(tz=UTC)
 
-    # Priority 1: Get next due card
+    # ✅ Priority 1: Get due LEARNING cards
     next_card = db.query(models.Card).filter(
         models.Card.deck_id == deck_id,
+        models.Card.card_state == CardState.LEARNING,
         models.Card.next_review <= now
     ).order_by(models.Card.next_review).first()
 
-    # Priority 2: If no due cards, get the oldest new card
+    # ✅ Priority 2: Get due REVIEW cards
     if not next_card:
         next_card = db.query(models.Card).filter(
             models.Card.deck_id == deck_id,
-            models.Card.next_review == None
-        ).order_by(models.Card.created_at).first() # Fetch oldest new card first
+            models.Card.card_state == CardState.REVIEW,
+            models.Card.next_review <= now
+        ).order_by(models.Card.next_review).first()
 
-    # If still no card found (neither due nor new)
+    # ✅ Priority 3: Get NEW cards
+    if not next_card:
+        next_card = db.query(models.Card).filter(
+            models.Card.deck_id == deck_id,
+            models.Card.card_state == CardState.NEW
+        ).order_by(models.Card.created_at).first()
+
+    # ✅ No card found
     if not next_card:
         raise HTTPException(status_code=404, detail="No cards due for review or new cards available")
 
+
+    is_due = False
+    if next_card.next_review is not None:
+        is_due = next_card.next_review <= now
+    # ✅ Return the next card
     return schemas.NextCardResponse(
         card_id=next_card.id,
-        due_date=next_card.next_review, # Will be None for new cards
+        due_date=next_card.next_review,
         current_streak=next_card.current_streak,
-        total_reviews=next_card.total_reviews
+        total_reviews=next_card.total_reviews,
+        card_state=next_card.card_state,
+        is_due=is_due
     )
+
 
 @router.get("/stats/{deck_id}", response_model=schemas.StudySessionStats)
 def get_study_stats(
@@ -369,27 +467,6 @@ def get_study_stats(
         mastery_rate=mastery_rate
     )
 
-def calculate_review_schedule(response_quality: str, time_taken: int) -> tuple[datetime, int]:
-    intervals = {
-        "again": timedelta(minutes=10),
-        "hard": timedelta(days=1),
-        "good": timedelta(days=3),
-        "perfect": timedelta(days=7)
-    }
-    points = {
-        "again": 0,
-        "hard": 5,
-        "good": 10,
-        "perfect": 15
-    }
-    
-    next_review = datetime.utcnow() + intervals[response_quality]
-    base_points = points[response_quality]
-    time_bonus = max(0, 60 - time_taken) // 10  # Bonus points for quick responses
-    
-    return next_review, base_points + time_bonus
-
-# Add after your existing endpoints
 @router.get("/sessions", response_model=List[schemas.StudySessionResponse])
 def list_study_sessions(
     time_range: TimeRange,
@@ -431,3 +508,154 @@ def list_study_sessions(
         raise HTTPException(status_code=500, detail=str(e))
     
     return query.all()
+
+@router.post("/update-card-states", response_model=schemas.StatusResponse)
+def update_all_card_states(
+    deck_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    now = datetime.now(tz=UTC)
+    
+    # Filter by deck_id if provided
+    query = db.query(models.Card)
+    if deck_id:
+        deck = db.query(models.Deck).filter(models.Deck.id == deck_id).first()
+        if not deck:
+            raise HTTPException(status_code=404, detail="Deck not found")
+        if not deck.is_public and deck.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to access this deck")
+        query = query.filter(models.Card.deck_id == deck_id)
+    
+    cards = query.all()
+    updated_count = 0
+    
+    for card in cards:
+        # Get the latest study record for this card
+        latest_record = db.query(models.StudyRecord).filter(
+            models.StudyRecord.card_id == card.id
+        ).order_by(models.StudyRecord.studied_at.desc()).first()
+        
+        # Get the interval from the record or use default
+        interval = latest_record.interval if latest_record else None
+        
+        # Calculate the correct state
+        new_state = determine_card_state(card.next_review, interval, now)
+        
+        # Only update if the state has changed
+        if card.card_state != new_state:
+            card.card_state = new_state
+            updated_count += 1
+    
+    db.commit()
+    return schemas.StatusResponse(
+        success=True,
+        message=f"Updated {updated_count} card states"
+    )
+
+
+# SM-2 algorithm calculation for models.py
+
+@staticmethod
+def calculate_next_review(response_quality, current_ease, current_interval, repetition_number):
+    """
+    Implements an Anki-style modified SM-2 algorithm for spaced repetition.
+    
+    Args:
+        response_quality: String quality rating ("again", "hard", "good", "easy")
+        current_ease: Current ease factor (default 2.5)
+        current_interval: Current interval in days
+        repetition_number: How many times card has been successfully reviewed
+        
+    Returns:
+        tuple: (next_review_date, new_ease, new_interval, new_repetition)
+    """
+    now = datetime.now(tz=UTC)
+    
+    # Default ease if not set (only applies to new cards)
+    if current_ease is None:
+        current_ease = 2.5
+
+    # Convert ease from decimal to percentage points for easier adjustment
+    ease_percentage = current_ease * 100
+    
+    # Handle learning phase (repetition_number == 0)
+    if repetition_number == 0:
+        if response_quality == "again":
+            # Move back to first step
+            next_review = now + timedelta(minutes=10)
+            new_interval = 0
+            new_ease = current_ease  # Preserve ease for new cards
+            new_repetition = 0
+        elif response_quality == "hard":
+            # Stay at current step but with longer interval
+            next_review = now + timedelta(hours=1)
+            new_interval = 0
+            new_ease = current_ease  # Preserve ease for new cards
+            new_repetition = 0
+        elif response_quality == "good":
+            # Move to next step
+            next_review = now + timedelta(days=1)
+            new_interval = 1
+            new_ease = current_ease  # Preserve ease for new cards
+            new_repetition = 1
+        else:  # easy - graduate immediately
+            next_review = now + timedelta(days=4)  # Skip 1-day interval
+            new_interval = 4
+            new_ease = current_ease
+            new_repetition = 2  # Skip to second repetition
+    
+    # Handle review phase
+    else:
+        # Apply interval modifier (can be configured in deck options)
+        interval_modifier = 1.0  # Default, but could be made configurable
+        
+        if response_quality == "again":
+            # Decrease ease by 20 percentage points
+            ease_percentage = max(130, ease_percentage - 20)
+            
+            # Card goes to relearning state
+            next_review = now + timedelta(minutes=10)
+            
+            # New interval when it exits relearning (typically 20% of old interval)
+            new_interval = max(1, int(current_interval * 0.2))
+            new_repetition = 0  # Reset repetition count
+        
+        elif response_quality == "hard":
+            # Decrease ease by 15 percentage points
+            ease_percentage = max(130, ease_percentage - 15)
+            
+            # Hard interval is 1.2x current by default
+            hard_interval_factor = 1.2
+            new_interval = max(current_interval + 1, 
+                              int(current_interval * hard_interval_factor * interval_modifier))
+            next_review = now + timedelta(days=new_interval)
+            new_repetition = repetition_number + 1
+        
+        elif response_quality == "good":
+            # Ease unchanged
+            # Next interval is current interval * ease
+            new_interval = max(current_interval + 1, 
+                              int(current_interval * (ease_percentage/100) * interval_modifier))
+            next_review = now + timedelta(days=new_interval)
+            new_repetition = repetition_number + 1
+        
+        else:  # "easy"
+            # Increase ease by 15 percentage points
+            ease_percentage += 15
+            
+            # Easy bonus (typically 1.3)
+            easy_bonus = 1.3
+            new_interval = max(current_interval + 1,
+                              int(current_interval * (ease_percentage/100) * easy_bonus * interval_modifier))
+            next_review = now + timedelta(days=new_interval)
+            new_repetition = repetition_number + 1
+    
+    # Convert ease percentage back to decimal
+    new_ease = ease_percentage / 100
+    
+    # Optional: implement maximum interval cap
+    max_interval = 36500  # 100 years default, could be configurable
+    new_interval = min(new_interval, max_interval)
+    
+    return next_review, new_ease, new_interval, new_repetition

@@ -7,8 +7,10 @@ from datetime import datetime
 
 from database import get_db
 import schemas
-from models import Card, CardMedia, CardTag, Deck
+from models import Card, CardMedia, CardTag, Deck, User # Added User for current_user type hint
 from auth import get_current_active_user
+# Assume you have a utility function for generation
+from utils.gemini_utils import generate_flashcards_from_pdf
 
 router = APIRouter(
     prefix="/api/cards",
@@ -70,41 +72,137 @@ async def get_card(
 async def create_card(
     card_data: schemas.CardCreate,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user) # Explicitly type hint current_user
 ):
     # Verify deck belongs to user
     deck = db.query(Deck).filter(
         Deck.id == card_data.deck_id,
         Deck.user_id == current_user.id
     ).first()
-    
+
     if not deck:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Deck not found or you don't have access to it"
         )
-    
+
     new_card = Card(
         deck_id=card_data.deck_id,
         front_content=card_data.front_content,
         back_content=card_data.back_content,
         source=card_data.source,
-        difficulty_level=schemas.DifficultyLevel.NEW,
-        card_state=schemas.CardState.NEW
+        difficulty_level=schemas.DifficultyLevel.NEW, # Assuming these enums exist
+        card_state=schemas.CardState.NEW # Assuming these enums exist
     )
-    
+
     db.add(new_card)
     db.commit()
     db.refresh(new_card)
-    
+
     # Add tags if provided
     if card_data.tags:
+        # Ensure tags exist and associate them (implementation depends on Tag model/logic)
+        # Example:
+        # existing_tags = db.query(Tag).filter(Tag.id.in_(card_data.tags)).all()
+        # if len(existing_tags) != len(card_data.tags):
+        #     raise HTTPException(status_code=400, detail="One or more tags not found")
         for tag_id in card_data.tags:
-            tag_association = CardTag(card_id=new_card.id, tag_id=tag_id)
-            db.add(tag_association)
+             # Check if tag exists first (implementation needed)
+             tag_association = CardTag(card_id=new_card.id, tag_id=tag_id)
+             db.add(tag_association)
         db.commit()
-    
+        db.refresh(new_card) # Refresh again to potentially load tags if relationship is configured
+
     return new_card
+
+# <<--- NEW ROUTE START --->>
+@router.post("/generate", response_model=List[schemas.CardResponse], status_code=status.HTTP_201_CREATED)
+async def generate_flashcards(
+    generation_request: schemas.CardGenerationRequest, # Define this schema in schemas/card.py
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Generates flashcards based on provided criteria (e.g., topic, text) using an AI model
+    and adds them to the specified deck.
+    """
+    # 1. Verify deck exists and belongs to the user
+    deck = db.query(Deck).filter(
+        Deck.id == generation_request.deck_id,
+        Deck.user_id == current_user.id
+    ).first()
+
+    if not deck:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Deck not found or you don't have access to it"
+        )
+
+    # 2. Call the AI generation function (ensure this function exists and handles errors)
+    try:
+        # You'll need to implement generate_flashcards in e.g., utils/gemini_utils.py
+        # It should return a list of dictionaries, e.g., [{'front': 'Q1', 'back': 'A1'}, ...]
+        generated_data = generate_flashcards_from_pdf(
+            pdf_source=generation_request.source_text,
+            num_flashcards=generation_request.num_flashcards,
+            topic=generation_request.topic
+            # Add any other parameters your generation function needs
+        )
+    except Exception as e:
+        # Log the error e
+        print(f"Error generating cards: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate cards: {str(e)}"
+        )
+
+    if not generated_data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Card generation resulted in no data."
+        )
+
+    # 3. Create Card objects in the database
+    new_cards = []
+    for card_content in generated_data:
+        if not card_content.get('front') or not card_content.get('back'):
+             print(f"Skipping invalid generated card data: {card_content}")
+             continue # Skip if essential data is missing
+
+        new_card = Card(
+            deck_id=generation_request.deck_id,
+            front_content=card_content['front'],
+            back_content=card_content['back'],
+            source="generated", # Indicate the source
+            difficulty_level=schemas.DifficultyLevel.NEW,
+            card_state=schemas.CardState.NEW
+            # Add other default fields as necessary
+        )
+        db.add(new_card)
+        new_cards.append(new_card)
+
+    if not new_cards:
+         raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create any cards from the generated data."
+        )
+
+    try:
+        db.commit()
+        for card in new_cards:
+            db.refresh(card) # Refresh each card to get its ID and other DB defaults
+    except Exception as e:
+        db.rollback()
+        # Log the error e
+        print(f"Error committing generated cards: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save generated cards to the database."
+        )
+
+    return new_cards
+# <<--- NEW ROUTE END --->>
+
 
 # Update a card
 @router.put("/{card_id}", response_model=schemas.CardResponse)

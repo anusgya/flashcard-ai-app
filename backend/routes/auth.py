@@ -15,7 +15,7 @@ from auth import (
 )
 
 router = APIRouter(
-    prefix="/auth",
+    prefix="/api/auth",
     tags=["authentication"],
     responses={401: {"description": "Unauthorized"}}
 )
@@ -90,4 +90,5 @@ def register_user(
 
 @router.get("/me", response_model=schemas.UserResponse)
 def read_users_me(current_user: User = Depends(get_current_active_user)):
+    print(current_user)  # Add this line for debugging purposes
     return current_user

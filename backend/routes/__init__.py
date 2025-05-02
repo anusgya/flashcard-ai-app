@@ -1,4 +1,6 @@
 from fastapi import APIRouter
+
+from .uploads import router as uploads
 from .users import router as users
 from .decks import router as decks
 from .cards import router as cards
@@ -20,6 +22,6 @@ api_router.include_router(study,  tags=["study"])
 api_router.include_router(quiz,  tags=["quiz"])
 api_router.include_router(gamification, tags=["gamification"])
 api_router.include_router(interactions,  tags=["interactions"])
-
+api_router.include_router(uploads, tags=["uploads"])
 # Export the main router
 __all__ = ["api_router"]

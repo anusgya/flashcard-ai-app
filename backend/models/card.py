@@ -15,7 +15,8 @@ class DifficultyLevel(str, Enum):
 class CardState(str, Enum):
     NEW = "new"
     LEARNING = "learning" 
-    DUE = "due"
+    REVIEW = "review"
+
 
 class Card(Base):
     __tablename__ = "cards"

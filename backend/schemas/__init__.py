@@ -4,7 +4,8 @@ from schemas.user import (
 from schemas.card import (
     CardBase, CardCreate, CardResponse, CardUpdate,
     CardMediaBase, CardMediaResponse, CardWithDetails,
-    DifficultyLevel, CardState, MediaType, MediaSide
+    DifficultyLevel, CardState, MediaType, MediaSide,
+    CardGenerationRequest # <-- Add this line
 )
 from schemas.deck import (
     DeckBase, DeckCreate, DeckResponse, DeckUpdate, 
@@ -18,7 +19,7 @@ from schemas.study import (
     StudySessionBase, StudySessionCreate, StudySessionResponse,
     StudyRecordBase, StudyRecordCreate, StudyRecordResponse,
     NextCardResponse, StudySessionUpdate, StudySessionStats,
-    ResponseQuality, ConfidenceLevel
+    ResponseQuality, ConfidenceLevel,DueCardsResponse, StatusResponse, SpacedRepetitionProgress
 )
 from schemas.quiz import (
     QuizSessionCreate, QuizSessionResponse,

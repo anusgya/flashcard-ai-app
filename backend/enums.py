@@ -11,3 +11,8 @@ class TimeRange(str, Enum):
     WEEK = "week"
     MONTH = "month"
     ALL = "all"
+
+class CardState(str, Enum):
+    NEW = "new"
+    LEARNING = "learning"
+    REVIEW = "review"

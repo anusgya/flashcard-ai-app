@@ -17,3 +17,4 @@ class User(Base):
     last_login = Column(DateTime, nullable=True)
     settings = Column(JSON, nullable=True)
     total_points = Column(Integer, default=0)
+    avatar = Column(String, default="Ellipse1.png", nullable=False)  # Store reference to locally stored PNG file

@@ -1,6 +1,9 @@
 import re
 from google import genai
+from google.genai import types # <-- Make sure this is imported
 import os
+import pathlib # <-- Make sure this is imported
+import httpx # <-- Make sure this is imported
 from typing import Optional, List, Dict, Tuple
 
 # Initialize the Gemini client
@@ -25,19 +28,41 @@ def clean_formatting(text: str) -> str:
 
 def generate_mnemonic(front_content: str, back_content: str, technique: Optional[str] = None) -> str:
     """Generate a mnemonic for a flashcard using Gemini."""
+    
+    techniques = {
+        # "acronym": "Create an acronym where each letter stands for a key word or concept.",
+        # "acrostic": "Create an acrostic where the first letter of each word in a sentence spells out a key term.",
+        "rhyme": "Create a rhyming phrase or short poem that's catchy and easy to remember.",
+        "visualization": "Create a vivid mental image that connects the concepts in a memorable way.",
+        # "chunking": "Break down complex information into smaller, manageable chunks.",
+        "story": "Create a brief narrative that connects the concepts in a memorable way.",
+        "association": "Link the new information to something already familiar."
+    }
+    
+    # If no technique specified, randomly select one
+    if technique is None:
+        import random
+        technique = random.choice(list(techniques.keys()))
+    
+    technique_instruction = techniques.get(technique, techniques["association"])
+    
     prompt = f"""
-    Create a very short, concise mnemonic to help remember that "{front_content}" is "{back_content}".
-    Be direct and to the point. Avoid unnecessary explanations or information.
-    Limit your response to just the mnemonic itself.
+    Please create a memorable mnemonic that helps remember that "{front_content}" is "{back_content}".
+    
+    {technique_instruction}
+    
+    The mnemonic should be:
+    1. Simple
+    2. Vivid and distinctive 
+    3. Easy to recall
+    4. Directly related to the content
+    5. Meaningful (not just random letters or words)
+    
+    Make it slightly humorous or connect it to everyday concepts when possible.
+    
+    Provide ONLY the mnemonic itself - no explanations, introductions, or additional text.
     Do not use any formatting like bold, italic, or markdown.
     """
-    
-    if technique == "acronym":
-        prompt += " Use an acronym technique."
-    elif technique == "visualization":
-        prompt += " Use an acronym technique."
-    elif technique == "rhyme":
-        prompt += " Use a rhyming technique."
     
     chat = client.chats.create(model="gemini-2.0-flash")
     response = chat.send_message(prompt)
@@ -62,12 +87,19 @@ def generate_explanation(front_content: str, back_content: str, detail_level: st
     response = chat.send_message(prompt)
     return clean_formatting(response.text)
 
-def generate_examples(front_content: str, back_content: str, count: int = 3) -> str:
-    """Generate examples related to a flashcard using Gemini."""
+def generate_examples(front_content: str, back_content: str, count: int = 1) -> str:
+    """Generate a clear example related to a flashcard using Gemini."""
     prompt = f"""
-    Provide {count} clear examples that demonstrate the relationship between "{front_content}" and "{back_content}".
-    Format each example with a number and a brief explanation.
+    Provide a single clear example that demonstrates the relationship between "{front_content}" and "{back_content}".
+    
+    The example should make the content clear and understandable.
+    Focus on creating a practical, real-world scenario that illustrates the concept effectively.
+    
     Do not use any special formatting like bold, italic, or markdown in your response.
+    Do not number your example or use bullet points.
+    
+    If the content is a complex concept with multiple parts, make sure to organize your example 
+    with appropriate whitespace and paragraph breaks for better readability.
     """
     
     chat = client.chats.create(model="gemini-2.0-flash")
@@ -375,3 +407,210 @@ def batch_generate_quiz_questions(cards: List[Tuple[str, str]],
             result.append(question_dict)
     
     return result
+
+
+# --- New PDF Processing Function ---Make sure this is initialized with your API key
+
+def generate_flashcards_from_pdf(pdf_source: str, num_flashcards: int, topic: Optional[str] = None) -> List[Dict[str, str]]:
+    """
+    Generates flashcards (front/back pairs) from a PDF file using Gemini.
+
+    Args:
+        pdf_source: URL or local file path to the PDF.
+        num_flashcards: The desired number of flashcards to generate.
+        topic: Optional topic context to guide generation.
+
+    Returns:
+        A list of dictionaries, where each dictionary represents a flashcard
+        with 'front' and 'back' keys. Returns an empty list on failure.
+
+    Raises:
+        FileNotFoundError: If a local PDF path is invalid.
+        httpx.RequestError: If downloading from URL fails.
+        Exception: For Gemini API errors during upload or generation.
+    """
+    pdf_path = None
+    temp_pdf_path = None  # To keep track if we downloaded a temp file
+    generated_flashcards = []
+
+    try:
+        # 1. Handle PDF Source (Download URL or use Local Path)
+        if pdf_source.startswith(('http://', 'https://')):
+            print(f"Downloading PDF from URL: {pdf_source}")
+            temp_pdf_path = pathlib.Path(f"temp_{pathlib.Path(pdf_source).name}")
+            # Use a reasonable timeout for potentially large files
+            response = httpx.get(pdf_source, follow_redirects=True, timeout=60.0)
+            response.raise_for_status()
+            temp_pdf_path.write_bytes(response.content)
+            pdf_path = temp_pdf_path
+            print(f"PDF downloaded and saved to: {pdf_path}")
+        elif pdf_source.startswith('/uploads/'):
+            # Handle server-relative URLs from the web application
+            import os
+            # Get the base directory - adjust according to your project structure
+            BASE_DIR = pathlib.Path(__file__).parent.parent  # Typically 2 levels up from utils
+            
+            # Map the URL path to the actual filesystem location
+            # This should match where your upload endpoint stores files
+            STATIC_DIR = BASE_DIR / "static"  # Adjust based on your setup
+            
+            # Convert URL path to filesystem path (removing leading slash)
+            relative_path = pdf_source.lstrip('/')
+            abs_path = STATIC_DIR / relative_path
+            
+            # Print debug information
+            print(f"Resolving server path: {pdf_source}")
+            print(f"Base directory: {BASE_DIR}")
+            print(f"Looking for file at: {abs_path}")
+            print(f"Directory exists: {abs_path.parent.exists()}")
+            
+            if abs_path.parent.exists():
+                print(f"Files in directory: {list(abs_path.parent.glob('*'))}")
+            
+            if not abs_path.is_file():
+                # Try an alternative location if the first attempt fails
+                ALT_UPLOAD_DIR = BASE_DIR / "uploads"  # Try another common location
+                alt_path = ALT_UPLOAD_DIR / relative_path.replace("uploads/", "")
+                
+                print(f"First path not found, trying alternative: {alt_path}")
+                
+                if not alt_path.is_file():
+                    # One more attempt - some frameworks store with full path structure
+                    final_attempt = pathlib.Path(pdf_source.lstrip('/'))
+                    print(f"Second path not found, trying direct path: {final_attempt}")
+                    
+                    if not final_attempt.is_file():
+                        raise FileNotFoundError(f"Local PDF file not found at any attempted path: {pdf_source}")
+                    abs_path = final_attempt
+                else:
+                    abs_path = alt_path
+            
+            pdf_path = abs_path
+            print(f"Using uploaded PDF file: {pdf_path}")
+        else:
+            # Original local path handling
+            local_path = pathlib.Path(pdf_source)
+            if not local_path.is_file():
+                raise FileNotFoundError(f"Local PDF file not found: {pdf_source}")
+            pdf_path = local_path
+            print(f"Using local PDF file: {pdf_path}")
+
+        # 2 & 3. Construct the Prompt and Generate with Gemini using PDF directly
+        print(f"Reading PDF content from: {pdf_path}")
+        
+        # Read the PDF file content
+        pdf_bytes = pdf_path.read_bytes()
+        
+        topic_instruction = f"Focus on the topic: {topic}." if topic else "Identify the main topics and concepts."
+        prompt = f"""
+        Analyze the content of the provided PDF document.
+        {topic_instruction}
+
+        Generate exactly {num_flashcards} flashcards based on the key information in the document.
+        Each flashcard should have a 'Front' (a question, term, or concept) and a 'Back' (the answer or definition).
+
+        Format each flashcard clearly like this, using '---' as a separator between cards:
+
+        Front: [Front text of card 1]
+        Back: [Back text of card 1]
+        ---
+        Front: [Front text of card 2]
+        Back: [Back text of card 2]
+        ---
+        (continue for all {num_flashcards} cards)
+
+        Ensure the Front and Back text are concise and suitable for flashcards.
+        Do not include any extra explanations or text outside this format.
+        
+        IMPORTANT: Make sure the Front contains ONLY the question/term, and the Back contains ONLY the answer/definition.
+        DO NOT include the answer in the Front.
+        """
+
+        # 4. Generate Content by sending the PDF directly
+        print(f"Generating {num_flashcards} flashcards from PDF...")
+        model_to_use = "gemini-1.5-flash"  # Or another appropriate model
+        
+        response = client.models.generate_content(
+            model=model_to_use,
+            contents=[
+                types.Part.from_bytes(
+                    data=pdf_bytes,
+                    mime_type='application/pdf',
+                ),
+                prompt
+            ]
+        )
+        print("Flashcard generation response received.")
+
+        # 5. Parse the Response - IMPROVED PARSING LOGIC
+        raw_text = response.text
+        # Split into individual card blocks based on the '---' separator
+        card_blocks = raw_text.strip().split('---')
+
+        for block in card_blocks:
+            if not block.strip():
+                continue
+
+            # Use non-greedy matching for front to stop at "Back:" or end of string
+            front_match = re.search(r"Front:\s*(.*?)(?=\s*Back:|\Z)", block, re.IGNORECASE | re.DOTALL)
+            back_match = re.search(r"Back:\s*(.*)", block, re.IGNORECASE | re.DOTALL)
+
+            if front_match and back_match:
+                # Extract content
+                front_text = front_match.group(1).strip()
+                back_text = back_match.group(1).strip()
+                
+                # Double-check for "Back:" that might have been included in front_text
+                if "Back:" in front_text:
+                    front_parts = front_text.split("Back:", 1)
+                    front_text = front_parts[0].strip()
+                
+                # Similarly check for "Front:" that might have been included in back_text
+                if "Front:" in back_text:
+                    back_parts = back_text.split("Front:", 1)
+                    back_text = back_parts[0].strip()
+                
+                # Further clean up any nested 'Front:' or 'Back:' text
+                front_text = re.sub(r'^Front:\s*', '', front_text).strip()
+                back_text = re.sub(r'^Back:\s*', '', back_text).strip()
+                
+                # Make sure the front_text doesn't contain the back_text
+                if back_text in front_text:
+                    front_text = front_text.replace(back_text, '').strip()
+                    # Clean up any trailing colons, question marks, etc.
+                    front_text = re.sub(r'[:\s]+$', '', front_text)
+                    # Make sure it ends with a question mark if it's a question
+                    if any(front_text.lower().startswith(q) for q in ['what', 'why', 'how', 'when', 'where', 'who', 'which']) and not front_text.endswith('?'):
+                        front_text += '?'
+
+                if front_text and back_text:  # Ensure both are non-empty
+                    generated_flashcards.append({"front": front_text, "back": back_text})
+                    print(f"Parsed flashcard: Front: {front_text[:30]}... Back: {back_text[:30]}...")
+            else:
+                print(f"Warning: Could not parse flashcard block:\n{block.strip()}")
+
+        # Ensure we don't return more cards than requested if parsing is imperfect
+        generated_flashcards = generated_flashcards[:num_flashcards]
+        print(f"Successfully parsed {len(generated_flashcards)} flashcards.")
+
+        return generated_flashcards
+
+    except httpx.RequestError as e:
+        print(f"Error downloading PDF from {pdf_source}: {e}")
+        raise  # Re-raise the exception
+    except FileNotFoundError as e:
+        print(f"Error accessing local PDF file: {e}")
+        raise  # Re-raise the exception
+    except Exception as e:
+        # Catch potential Gemini API errors or other issues
+        print(f"An error occurred during flashcard generation from PDF: {e}")
+        # Consider logging the full error details
+        raise  # Re-raise the exception
+    finally:
+        # 6. Clean up the temporary file
+        if temp_pdf_path and temp_pdf_path.exists():
+            try:
+                temp_pdf_path.unlink()
+                print(f"Temporary file {temp_pdf_path} deleted.")
+            except OSError as e:
+                print(f"Error deleting temporary file {temp_pdf_path}: {e}")

@@ -26,7 +26,8 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = models.User(
         username=user.username,
         email=user.email,
-        password_hash=hashed_password
+        password_hash=hashed_password,
+        avatar=user.avatar  # Include the avatar field
     )
     db.add(db_user)
     db.commit()
@@ -64,6 +65,7 @@ def update_user_me(
     if "password" in update_data:
         update_data["password_hash"] = get_password_hash(update_data.pop("password"))
     
+    # The avatar will be automatically included if it's in the update_data dictionary
     for key, value in update_data.items():
         setattr(current_user, key, value)
     
