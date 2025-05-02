@@ -1,0 +1,25 @@
+# Create a .gitignore file in the backend directory
+cat > .gitignore << EOL
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# Environment variables
+.env
+.env.*
+
+# Database
+*.sqlite3
+*.db
+
+# Media & uploads
+media/*/
+uploads/*/
+!media/.gitkeep
+!uploads/.gitkeep
+EOL
