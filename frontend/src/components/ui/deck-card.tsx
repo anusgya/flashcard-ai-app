@@ -4,10 +4,10 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 interface DeckCardProps {
-  id:string;
+  id: string;
   title: string;
-  progress: number;
-  cardsCount: number;
+  learningCount: number;
+  totalCount: number;
 }
 
 const progressColors = [
@@ -16,9 +16,18 @@ const progressColors = [
   { bg: "bg-primary-green", bgSecondary: "bg-primary-green/20" },
 ];
 
-export function DeckCard({ id, title, progress, cardsCount }: DeckCardProps) {
+export function DeckCard({
+  id,
+  title,
+  learningCount,
+  totalCount,
+}: DeckCardProps) {
   const randomColorPair =
     progressColors[Math.floor(Math.random() * progressColors.length)];
+
+  // Calculate progress percentage
+  const progress =
+    totalCount > 0 ? Math.round((learningCount / totalCount) * 100) : 0;
 
   return (
     <Link href={`/learn/${id}`}>
@@ -27,7 +36,7 @@ export function DeckCard({ id, title, progress, cardsCount }: DeckCardProps) {
           <div className="space-y-1">
             <h3 className="text-md font-medium text-foreground">{title}</h3>
             <p className="text-sm text-secondary-foreground font-fragment-mono">
-              {cardsCount} cards mastered
+              {learningCount}/{totalCount} cards learning
             </p>
           </div>
 

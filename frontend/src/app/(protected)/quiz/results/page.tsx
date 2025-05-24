@@ -115,8 +115,8 @@ export default function QuizResultsPage() {
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
-          <h1 className="text-4xl font-bold text-white">Quiz Complete!</h1>
-          <p className="text-gray-300 font-fragment-mono">{message}</p>
+          <h1 className="text-4xl font-bold text-foreground">Quiz Complete!</h1>
+          <p className="text-secondary-foreground font-fragment-mono ">{message}</p>
         </motion.div>
 
         <motion.div
@@ -128,27 +128,27 @@ export default function QuizResultsPage() {
           <motion.div className="space-y-2 bg-card/80 p-4 rounded-xl border border-border" whileHover={{ scale: 1.05 }}>
             {/* <Target className="w-6 h-6 text-gray-400 mx-auto mb-2" /> */}
             <motion.p
-              className="text-3xl font-bold text-white"
+              className="text-3xl font-bold text-primary-orange"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
             >
               {attempted}
             </motion.p>
-            <p className="text-sm text-gray-400 font-fragment-mono">Attempted</p>
+            <p className="text-sm text-foreground  font-fragment-mono">Attempted</p>
           </motion.div>
 
           <motion.div className="space-y-2 bg-card/80 p-4 rounded-xl border border-border" whileHover={{ scale: 1.05 }}>
             {/* <Award className="w-6 h-6 text-green-400 mx-auto mb-2" /> */}
             <motion.p
-              className="text-3xl font-bold text-white"
+              className="text-3xl font-bold text-primary-green"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1 }}
             >
               {correct}
             </motion.p>
-            <p className="text-sm text-gray-400 font-fragment-mono">Correct</p>
+            <p className="text-sm text-foreground font-fragment-mono">Correct</p>
           </motion.div>
 
           <motion.div className="space-y-2  p-4 rounded-xl border border-border" whileHover={{ scale: 1.05 }}>
@@ -157,7 +157,7 @@ export default function QuizResultsPage() {
               <AnimatePresence mode="wait">
                 <motion.p
                   key={accuracy}
-                  className="text-3xl font-bold text-white absolute"
+                  className="text-3xl font-bold text-primary-blue absolute"
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -20, opacity: 0 }}
@@ -167,7 +167,7 @@ export default function QuizResultsPage() {
                 </motion.p>
               </AnimatePresence>
             </motion.div>
-            <p className="text-sm text-gray-400 font-fragment-mono">Accuracy</p>
+            <p className="text-sm text-foreground font-fragment-mono">Accuracy</p>
           </motion.div>
         </motion.div>
 

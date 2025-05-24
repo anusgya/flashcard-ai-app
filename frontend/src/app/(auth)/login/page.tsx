@@ -4,10 +4,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
-  const { toast } = useToast()
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -17,8 +17,8 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true); 
-    
+    setIsLoading(true);
+
     try {
       console.log(email, password);
       const response = await fetch("http://localhost:8000/api/auth/token", {
@@ -31,10 +31,10 @@ export default function LoginPage() {
           password: password,
         }),
       });
-      
+
       // Read the response body ONCE and store it
       const data = await response.json();
-      
+
       if (!response.ok) {
         toast({
           title: "Login failed",
@@ -46,12 +46,12 @@ export default function LoginPage() {
       } else {
         toast({
           title: "Login successful",
-          variant: "default"
+          variant: "default",
         });
-        
+
         // Store the token
         localStorage.setItem("token", data.access_token);
-        
+
         // Redirect to dashboard
         router.push("/dashboard");
       }
@@ -67,7 +67,6 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
-
 
   return (
     <div className="min-h-screen w-full bg-background flex items-center justify-center p-4">
@@ -101,7 +100,7 @@ export default function LoginPage() {
           <Button
             type="submit"
             // onClick={() => (window.location.href = "/dashboard")}
-            className="w-full bg-primary-green text-primary-green-secondary font-semibold hover:bg-primary-green/90"
+            className="w-full bg-primary-green text-muted font-semibold hover:border-b-0"
           >
             Login
           </Button>
@@ -111,7 +110,7 @@ export default function LoginPage() {
               href="#"
               className="text-xs text-secondary-foreground hover:text-primary"
             >
-              Forgot Password?
+              {/* Forgot Password? */}
             </a>
           </div>
 

@@ -1,7 +1,7 @@
-import useSWR from 'swr';
-import { fetcher, fetchWithAuth } from './fetchWithAuth'; // Assuming fetchWithAuth handles token injection
-import { TimeRange, QuizDifficulty } from '@/enums'; // Adjust path as needed
-import { UUID } from 'crypto'; // Or use 'string' if UUIDs are treated as strings
+import useSWR from "swr";
+import { fetcher, fetchWithAuth } from "./fetchWithAuth"; // Assuming fetchWithAuth handles token injection
+import { TimeRange, QuizDifficulty } from "@/enums"; // Adjust path as needed
+import { UUID } from "crypto"; // Or use 'string' if UUIDs are treated as strings
 
 // --- Backend Schema Interfaces ---
 
@@ -83,16 +83,20 @@ export interface StartQuizResponse {
 // Get quiz sessions list
 export function useQuizSessions(timeRange: TimeRange, deckId?: UUID | null) {
   const queryParams = new URLSearchParams();
-  queryParams.append('time_range', timeRange);
-  if (deckId) queryParams.append('deck_id', deckId as string);
+  queryParams.append("time_range", timeRange);
+  if (deckId) queryParams.append("deck_id", deckId as string);
 
   const url = `/api/quiz/sessions?${queryParams.toString()}`;
 
-  const { data, error, isLoading, mutate } = useSWR<QuizSession[]>(url, fetcher, {
-    revalidateOnFocus: false,
-    revalidateIfStale: true,
-    dedupingInterval: 60000, // 1 minute
-  });
+  const { data, error, isLoading, mutate } = useSWR<QuizSession[]>(
+    url,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: true,
+      dedupingInterval: 60000, // 1 minute
+    }
+  );
 
   return {
     sessions: data,
@@ -107,15 +111,11 @@ export function useQuizSessions(timeRange: TimeRange, deckId?: UUID | null) {
 export function useQuizSession(sessionId: UUID | null) {
   const url = sessionId ? `/api/quiz/sessions/${sessionId}` : null;
 
-  const { data, error, isLoading, mutate } = useSWR<QuizSession>(
-    url,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateIfStale: true,
-      dedupingInterval: 60000, // 1 minute
-    }
-  );
+  const { data, error, isLoading, mutate } = useSWR<QuizSession>(url, fetcher, {
+    revalidateOnFocus: false,
+    revalidateIfStale: true,
+    dedupingInterval: 60000, // 1 minute
+  });
 
   return {
     session: data,
@@ -127,9 +127,11 @@ export function useQuizSession(sessionId: UUID | null) {
 }
 
 // Create a new quiz session
-export async function createQuizSession(sessionData: QuizSessionCreate): Promise<QuizSession> {
+export async function createQuizSession(
+  sessionData: QuizSessionCreate
+): Promise<QuizSession> {
   return fetchWithAuth(`/api/quiz/sessions`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(sessionData),
   });
 }
@@ -140,15 +142,17 @@ export async function updateQuizSession(
   sessionData: Partial<QuizSessionUpdate>
 ): Promise<QuizSession> {
   return fetchWithAuth(`/api/quiz/sessions/${sessionId}`, {
-    method: 'PUT',
+    method: "PUT",
     body: JSON.stringify(sessionData),
   });
 }
 
 // Submit a quiz answer
-export async function submitQuizAnswer(answerData: QuizAnswerCreate): Promise<QuizAnswerResponse> {
+export async function submitQuizAnswer(
+  answerData: QuizAnswerCreate
+): Promise<QuizAnswerResponse> {
   return fetchWithAuth(`/api/quiz/answers`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(answerData),
   });
 }
@@ -177,13 +181,17 @@ export function useQuizStats(deckId: UUID | null) {
 }
 
 // Get a question for a specific card
-export function useCardQuestion(cardId: UUID | null, difficulty: QuizDifficulty = QuizDifficulty.MEDIUM, regenerate: boolean = false) {
+export function useCardQuestion(
+  cardId: UUID | null,
+  difficulty: QuizDifficulty = QuizDifficulty.MEDIUM,
+  regenerate: boolean = false
+) {
   let url = null;
-  
+
   if (cardId) {
     const queryParams = new URLSearchParams();
-    queryParams.append('difficulty', difficulty);
-    queryParams.append('regenerate', regenerate.toString());
+    queryParams.append("difficulty", difficulty);
+    queryParams.append("regenerate", regenerate.toString());
     url = `/api/quiz/questions/${cardId}?${queryParams.toString()}`;
   }
 
@@ -229,19 +237,19 @@ export function useSessionQuestions(sessionId: UUID | null) {
   };
 }
 
-// Start a new quiz with generated questions
 export async function startQuiz(
-  deckId: UUID, 
-  difficulty: QuizDifficulty = QuizDifficulty.MEDIUM, 
+  deckId: UUID,
+  difficulty: QuizDifficulty = QuizDifficulty.MEDIUM,
   numQuestions?: number
 ): Promise<StartQuizResponse> {
   const queryParams = new URLSearchParams();
-  queryParams.append('deck_id', deckId as string);
-  queryParams.append('difficulty', difficulty);
-  if (numQuestions) queryParams.append('num_questions', numQuestions.toString());
+  queryParams.append("deck_id", deckId as string);
+  queryParams.append("difficulty", difficulty);
+  if (numQuestions)
+    queryParams.append("num_questions", numQuestions.toString());
 
   return fetchWithAuth(`/api/quiz/start?${queryParams.toString()}`, {
-    method: 'POST',
+    method: "POST",
   });
 }
 
@@ -253,36 +261,39 @@ export async function generateQuizQuestions(
   regenerate: boolean = false
 ): Promise<QuizQuestionResponse[]> {
   const queryParams = new URLSearchParams();
-  queryParams.append('deck_id', deckId as string);
-  queryParams.append('difficulty', difficulty);
-  if (numQuestions) queryParams.append('num_questions', numQuestions.toString());
-  queryParams.append('regenerate', regenerate.toString());
+  queryParams.append("deck_id", deckId as string);
+  queryParams.append("difficulty", difficulty);
+  if (numQuestions)
+    queryParams.append("num_questions", numQuestions.toString());
+  queryParams.append("regenerate", regenerate.toString());
 
   return fetchWithAuth(`/api/quiz/generate?${queryParams.toString()}`, {
-    method: 'POST',
+    method: "POST",
   });
 }
 
 // Create a quiz question
-export async function createQuizQuestion(questionData: QuizQuestionCreate): Promise<QuizQuestionResponse> {
+export async function createQuizQuestion(
+  questionData: QuizQuestionCreate
+): Promise<QuizQuestionResponse> {
   return fetchWithAuth(`/api/quiz/questions`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(questionData),
   });
 }
 
 // Get random quiz questions from a deck
 export function useRandomQuestions(
-  deckId: UUID | null, 
-  count: number = 10, 
+  deckId: UUID | null,
+  count: number = 10,
   difficulty: QuizDifficulty = QuizDifficulty.MEDIUM
 ) {
   let url = null;
-  
+
   if (deckId) {
     const queryParams = new URLSearchParams();
-    queryParams.append('count', count.toString());
-    queryParams.append('difficulty', difficulty);
+    queryParams.append("count", count.toString());
+    queryParams.append("difficulty", difficulty);
     url = `/api/quiz/random/${deckId}?${queryParams.toString()}`;
   }
 

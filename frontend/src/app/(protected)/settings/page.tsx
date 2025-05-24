@@ -36,7 +36,7 @@ export default function Settings() {
     >
       <div className="w-full space-y-6 py-16 px-12">
         {/* Header */}
-        <div className="flex gap-2 flex-col ">
+        <div className="flex gap-2 flex-col">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -59,7 +59,7 @@ export default function Settings() {
           <Accordion type="single" collapsible className="space-y-4">
             <motion.div variants={item}>
               <AccordionItem value="avatar" className="border rounded-lg">
-                <AccordionTrigger className="px-4 hover:no-underline  font-semibold text-base"> 🦊  Select Avatar</AccordionTrigger>
+                <AccordionTrigger className="px-4 hover:no-underline  font-semibold "> 🦊  Select Avatar</AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <AvatarSelection />
                 </AccordionContent>
@@ -68,7 +68,7 @@ export default function Settings() {
 
             <motion.div variants={item}>
               <AccordionItem value="username" className="border rounded-lg">
-                <AccordionTrigger className="px-4 hover:no-underline  font-semibold text-base">
+                <AccordionTrigger className="px-4 hover:no-underline  font-semibold ">
                  👤  Change Username
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
@@ -81,7 +81,7 @@ export default function Settings() {
 
             <motion.div variants={item}>
               <AccordionItem value="email" className="border rounded-lg">
-                <AccordionTrigger className="px-4 hover:no-underline  font-semibold text-base">
+                <AccordionTrigger className="px-4 hover:no-underline  font-semibold ">
                  ✉️  Change Email
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
@@ -91,7 +91,7 @@ export default function Settings() {
             </motion.div>
             <motion.div variants={item}>
               <AccordionItem value="password" className="border rounded-lg">
-                <AccordionTrigger className="px-4 hover:no-underline  font-semibold text-base">🔑  Reset Password</AccordionTrigger>
+                <AccordionTrigger className="px-4 hover:no-underline  font-semibold ">🔑  Reset Password</AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
                   <ResetPassword />
                 </AccordionContent>

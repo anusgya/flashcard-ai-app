@@ -178,7 +178,7 @@ def generate_quiz_options(question: str, correct_answer: str,
     Correct Answer: "{correct_answer}"
     {topic_context}
 
-    Generate {num_options} plausible but **incorrect** multiple-choice options (distractors) for this question.
+    Generate {num_options} plausible but **incorrect** multiple-choice options (distractors) for this question. Do not repeat the correct answer or use any part of it in the options.
 
     **Crucial Instructions:**
     1.  **Incorrect:** Each option MUST be factually incorrect in the context of the question.
@@ -210,10 +210,10 @@ def generate_quiz_options(question: str, correct_answer: str,
 
     # Remove any numbering or bullet points and clean up each option
     options = []
-    seen_options = {correct_answer.lower()} # Keep track to ensure uniqueness vs correct answer
+    seen_options = {correct_answer.lower()}  # Keep track to ensure uniqueness vs correct answer
+    
     for opt in raw_options:
         # Fix the regex pattern to properly handle list markers without cutting off first letters
-        # The previous pattern was too aggressive with [A-Z]+ which could match the first letter of the option
         clean_opt = re.sub(r'^[\d\-\*\.\)]+\s*|^[A-Z][\)\.]?\s+', '', opt).strip()
         
         # Remove surrounding quotes if present
@@ -223,16 +223,65 @@ def generate_quiz_options(question: str, correct_answer: str,
         if clean_opt and clean_opt.lower() not in seen_options:
             options.append(clean_opt)
             seen_options.add(clean_opt.lower())
-
-    # If we didn't get enough options, try to generate more (simplified retry)
-    # Note: A more robust retry might be needed if this consistently fails
+    
+    # If we didn't get enough options, generate more with an explicit instruction to avoid duplication
     if len(options) < num_options:
-        print(f"Warning: Only generated {len(options)}/{num_options} distinct options for: {question}")
-        # You could add a retry mechanism here similar to before if needed,
-        # but focus on the main prompt first.
-
+        additional_needed = num_options - len(options)
+        retry_prompt = f"""
+        Question: "{question}"
+        Correct Answer: "{correct_answer}"
+        {topic_context}
+        
+        I need {additional_needed} more unique incorrect options for this question.
+        
+        Already generated options (DO NOT USE THESE):
+        - {correct_answer}
+        {chr(10).join([f"- {opt}" for opt in options])}
+        
+        Generate {additional_needed} NEW plausible but incorrect multiple-choice options that are DIFFERENT from all the above.
+        
+        Apply this difficulty level: {difficulty_guide.get(difficulty, difficulty_guide["medium"])}
+        """
+        
+        retry_response = chat.send_message(retry_prompt)
+        retry_raw_options = clean_formatting(retry_response.text).split('\n')
+        
+        for opt in retry_raw_options:
+            clean_opt = re.sub(r'^[\d\-\*\.\)]+\s*|^[A-Z][\)\.]?\s+', '', opt).strip()
+            
+            if len(clean_opt) >= 2 and clean_opt.startswith('"') and clean_opt.endswith('"'):
+                clean_opt = clean_opt[1:-1].strip()
+                
+            if clean_opt and clean_opt.lower() not in seen_options:
+                options.append(clean_opt)
+                seen_options.add(clean_opt.lower())
+                
+                # Break once we have enough options
+                if len(options) >= num_options:
+                    break
+    
+    # If we still don't have enough options after retry, create simple fallback options
+    # This ensures we always return the requested number of options
+    if len(options) < num_options:
+        fallback_templates = [
+            f"Not {correct_answer} - Fallback option 1",
+            f"Different from {correct_answer} - Fallback option 2",
+            f"Alternative concept - Fallback option 3",
+            f"Common misconception - Fallback option 4",
+            f"Another incorrect answer - Fallback option 5"
+        ]
+        
+        for template in fallback_templates:
+            if template.lower() not in seen_options:
+                options.append(template)
+                seen_options.add(template.lower())
+                
+                if len(options) >= num_options:
+                    break
+    
     # Limit to exactly the number requested
     return options[:num_options]
+                          
 
 def generate_quiz_question(front_content: str, back_content: str, 
                            difficulty: str = "medium",
@@ -409,52 +458,29 @@ def batch_generate_quiz_questions(cards: List[Tuple[str, str]],
     return result
 
 
-# --- New PDF Processing Function ---Make sure this is initialized with your API key
 
 def generate_flashcards_from_pdf(pdf_source: str, num_flashcards: int, topic: Optional[str] = None) -> List[Dict[str, str]]:
-    """
-    Generates flashcards (front/back pairs) from a PDF file using Gemini.
 
-    Args:
-        pdf_source: URL or local file path to the PDF.
-        num_flashcards: The desired number of flashcards to generate.
-        topic: Optional topic context to guide generation.
-
-    Returns:
-        A list of dictionaries, where each dictionary represents a flashcard
-        with 'front' and 'back' keys. Returns an empty list on failure.
-
-    Raises:
-        FileNotFoundError: If a local PDF path is invalid.
-        httpx.RequestError: If downloading from URL fails.
-        Exception: For Gemini API errors during upload or generation.
-    """
     pdf_path = None
-    temp_pdf_path = None  # To keep track if we downloaded a temp file
+    temp_pdf_path = None  
     generated_flashcards = []
 
     try:
-        # 1. Handle PDF Source (Download URL or use Local Path)
         if pdf_source.startswith(('http://', 'https://')):
             print(f"Downloading PDF from URL: {pdf_source}")
             temp_pdf_path = pathlib.Path(f"temp_{pathlib.Path(pdf_source).name}")
-            # Use a reasonable timeout for potentially large files
             response = httpx.get(pdf_source, follow_redirects=True, timeout=60.0)
             response.raise_for_status()
             temp_pdf_path.write_bytes(response.content)
             pdf_path = temp_pdf_path
             print(f"PDF downloaded and saved to: {pdf_path}")
         elif pdf_source.startswith('/uploads/'):
-            # Handle server-relative URLs from the web application
             import os
-            # Get the base directory - adjust according to your project structure
             BASE_DIR = pathlib.Path(__file__).parent.parent  # Typically 2 levels up from utils
             
-            # Map the URL path to the actual filesystem location
-            # This should match where your upload endpoint stores files
+ 
             STATIC_DIR = BASE_DIR / "static"  # Adjust based on your setup
-            
-            # Convert URL path to filesystem path (removing leading slash)
+     
             relative_path = pdf_source.lstrip('/')
             abs_path = STATIC_DIR / relative_path
             
@@ -468,14 +494,12 @@ def generate_flashcards_from_pdf(pdf_source: str, num_flashcards: int, topic: Op
                 print(f"Files in directory: {list(abs_path.parent.glob('*'))}")
             
             if not abs_path.is_file():
-                # Try an alternative location if the first attempt fails
-                ALT_UPLOAD_DIR = BASE_DIR / "uploads"  # Try another common location
+                ALT_UPLOAD_DIR = BASE_DIR / "uploads"  
                 alt_path = ALT_UPLOAD_DIR / relative_path.replace("uploads/", "")
                 
                 print(f"First path not found, trying alternative: {alt_path}")
                 
                 if not alt_path.is_file():
-                    # One more attempt - some frameworks store with full path structure
                     final_attempt = pathlib.Path(pdf_source.lstrip('/'))
                     print(f"Second path not found, trying direct path: {final_attempt}")
                     
@@ -488,17 +512,14 @@ def generate_flashcards_from_pdf(pdf_source: str, num_flashcards: int, topic: Op
             pdf_path = abs_path
             print(f"Using uploaded PDF file: {pdf_path}")
         else:
-            # Original local path handling
             local_path = pathlib.Path(pdf_source)
             if not local_path.is_file():
                 raise FileNotFoundError(f"Local PDF file not found: {pdf_source}")
             pdf_path = local_path
             print(f"Using local PDF file: {pdf_path}")
 
-        # 2 & 3. Construct the Prompt and Generate with Gemini using PDF directly
         print(f"Reading PDF content from: {pdf_path}")
         
-        # Read the PDF file content
         pdf_bytes = pdf_path.read_bytes()
         
         topic_instruction = f"Focus on the topic: {topic}." if topic else "Identify the main topics and concepts."
@@ -526,7 +547,6 @@ def generate_flashcards_from_pdf(pdf_source: str, num_flashcards: int, topic: Op
         DO NOT include the answer in the Front.
         """
 
-        # 4. Generate Content by sending the PDF directly
         print(f"Generating {num_flashcards} flashcards from PDF...")
         model_to_use = "gemini-1.5-flash"  # Or another appropriate model
         
@@ -542,16 +562,13 @@ def generate_flashcards_from_pdf(pdf_source: str, num_flashcards: int, topic: Op
         )
         print("Flashcard generation response received.")
 
-        # 5. Parse the Response - IMPROVED PARSING LOGIC
         raw_text = response.text
-        # Split into individual card blocks based on the '---' separator
         card_blocks = raw_text.strip().split('---')
 
         for block in card_blocks:
             if not block.strip():
                 continue
 
-            # Use non-greedy matching for front to stop at "Back:" or end of string
             front_match = re.search(r"Front:\s*(.*?)(?=\s*Back:|\Z)", block, re.IGNORECASE | re.DOTALL)
             back_match = re.search(r"Back:\s*(.*)", block, re.IGNORECASE | re.DOTALL)
 
@@ -560,26 +577,20 @@ def generate_flashcards_from_pdf(pdf_source: str, num_flashcards: int, topic: Op
                 front_text = front_match.group(1).strip()
                 back_text = back_match.group(1).strip()
                 
-                # Double-check for "Back:" that might have been included in front_text
                 if "Back:" in front_text:
                     front_parts = front_text.split("Back:", 1)
                     front_text = front_parts[0].strip()
                 
-                # Similarly check for "Front:" that might have been included in back_text
                 if "Front:" in back_text:
                     back_parts = back_text.split("Front:", 1)
                     back_text = back_parts[0].strip()
                 
-                # Further clean up any nested 'Front:' or 'Back:' text
                 front_text = re.sub(r'^Front:\s*', '', front_text).strip()
                 back_text = re.sub(r'^Back:\s*', '', back_text).strip()
                 
-                # Make sure the front_text doesn't contain the back_text
                 if back_text in front_text:
                     front_text = front_text.replace(back_text, '').strip()
-                    # Clean up any trailing colons, question marks, etc.
                     front_text = re.sub(r'[:\s]+$', '', front_text)
-                    # Make sure it ends with a question mark if it's a question
                     if any(front_text.lower().startswith(q) for q in ['what', 'why', 'how', 'when', 'where', 'who', 'which']) and not front_text.endswith('?'):
                         front_text += '?'
 
@@ -589,7 +600,6 @@ def generate_flashcards_from_pdf(pdf_source: str, num_flashcards: int, topic: Op
             else:
                 print(f"Warning: Could not parse flashcard block:\n{block.strip()}")
 
-        # Ensure we don't return more cards than requested if parsing is imperfect
         generated_flashcards = generated_flashcards[:num_flashcards]
         print(f"Successfully parsed {len(generated_flashcards)} flashcards.")
 
@@ -602,12 +612,9 @@ def generate_flashcards_from_pdf(pdf_source: str, num_flashcards: int, topic: Op
         print(f"Error accessing local PDF file: {e}")
         raise  # Re-raise the exception
     except Exception as e:
-        # Catch potential Gemini API errors or other issues
         print(f"An error occurred during flashcard generation from PDF: {e}")
-        # Consider logging the full error details
         raise  # Re-raise the exception
     finally:
-        # 6. Clean up the temporary file
         if temp_pdf_path and temp_pdf_path.exists():
             try:
                 temp_pdf_path.unlink()

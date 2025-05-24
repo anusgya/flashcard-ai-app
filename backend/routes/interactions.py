@@ -20,32 +20,6 @@ router = APIRouter(
 )
 
 
-# Get interactions for a card
-@router.get("/cards/{card_id}/interactions", response_model=List[CardInteractionResponse])
-async def get_card_interactions(
-    card_id: UUID,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_active_user)
-):
-    # Verify card exists and user has access
-    card = db.query(Card).join(Deck).filter(
-        Card.id == card_id,
-        Deck.user_id == current_user.id
-    ).first()
-    
-    if not card:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Card not found or you don't have access to it"
-        )
-    
-    # Get interactions
-    interactions = db.query(CardInteraction).filter(
-        CardInteraction.card_id == card_id,
-        CardInteraction.user_id == current_user.id
-    ).order_by(CardInteraction.created_at.desc()).all()
-    
-    return interactions
 
 # Generate a mnemonic for a card
 @router.post("/cards/{card_id}/mnemonics", response_model=LLMResponseResponse)

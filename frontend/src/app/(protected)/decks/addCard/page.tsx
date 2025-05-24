@@ -1,6 +1,14 @@
 "use client";
 
-import { ArrowLeft, ImagePlus, Mic, MicOff, X, Image as ImageIcon, Volume2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ImagePlus,
+  Mic,
+  MicOff,
+  X,
+  Image as ImageIcon,
+  Volume2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
@@ -20,31 +28,39 @@ import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
 
-export default function AddNotePage( ) {
+export default function AddNotePage() {
   const { toast } = useToast();
-  const params = useParams<{deckId: string}>();
+  const params = useParams<{ deckId: string }>();
   const router = useRouter();
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [questionImage, setQuestionImage] = useState<File | null>(null);
   const [answerImage, setAnswerImage] = useState<File | null>(null);
-  const [questionImagePreview, setQuestionImagePreview] = useState<string | null>(null);
-  const [answerImagePreview, setAnswerImagePreview] = useState<string | null>(null);
+  const [questionImagePreview, setQuestionImagePreview] = useState<
+    string | null
+  >(null);
+  const [answerImagePreview, setAnswerImagePreview] = useState<string | null>(
+    null
+  );
   const [questionAudio, setQuestionAudio] = useState<Blob | null>(null);
   const [answerAudio, setAnswerAudio] = useState<Blob | null>(null);
   const [questionAudioUrl, setQuestionAudioUrl] = useState<string | null>(null);
   const [answerAudioUrl, setAnswerAudioUrl] = useState<string | null>(null);
-  const [activeMediaSection, setActiveMediaSection] = useState<"question" | "answer">("answer");
-  
+  const [activeMediaSection, setActiveMediaSection] = useState<
+    "question" | "answer"
+  >("answer");
+
   const { mutate } = useCards(params.deckId);
 
   // Audio recording states
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingSection, setRecordingSection] = useState<"question" | "answer" | null>(null);
+  const [recordingSection, setRecordingSection] = useState<
+    "question" | "answer" | null
+  >(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  
+
   // Audio preview states
   const [isPlayingQuestionAudio, setIsPlayingQuestionAudio] = useState(false);
   const [isPlayingAnswerAudio, setIsPlayingAnswerAudio] = useState(false);
@@ -55,34 +71,36 @@ export default function AddNotePage( ) {
   const answerInputRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-
-  const {deck} = useDeck(params.deckId);
-  const {decks} = useDecks();
+  const { deck } = useDeck(params.deckId);
+  const { decks } = useDecks();
   const [selectedDeck, setSelectedDeck] = useState(params.deckId);
 
   type Deck = {
     id: string;
     name: string;
     description: string;
-  }
+  };
 
   // Function to convert data URI to a file blob
   const dataURItoBlob = (dataURI: string): Blob => {
-    const byteString = atob(dataURI.split(',')[1]);
-    const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+    const byteString = atob(dataURI.split(",")[1]);
+    const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
     const ab = new ArrayBuffer(byteString.length);
     const ia = new Uint8Array(ab);
-    
+
     for (let i = 0; i < byteString.length; i++) {
       ia[i] = byteString.charCodeAt(i);
     }
-    
+
     return new Blob([ab], { type: mimeString });
   };
 
   // Handle paste events for images
   useEffect(() => {
-    const handlePaste = async (e: ClipboardEvent, section: "question" | "answer") => {
+    const handlePaste = async (
+      e: ClipboardEvent,
+      section: "question" | "answer"
+    ) => {
       const items = e.clipboardData?.items;
       if (!items) return;
 
@@ -95,17 +113,17 @@ export default function AddNotePage( ) {
           const reader = new FileReader();
           reader.onload = (event) => {
             const imageUrl = event.target?.result as string;
-            
+
             if (section === "question") {
               // Create a File object from the blob with a meaningful name
-              const file = new File([blob], `pasted-image-${Date.now()}.png`, { 
-                type: blob.type 
+              const file = new File([blob], `pasted-image-${Date.now()}.png`, {
+                type: blob.type,
               });
               setQuestionImage(file);
               setQuestionImagePreview(imageUrl);
             } else {
-              const file = new File([blob], `pasted-image-${Date.now()}.png`, { 
-                type: blob.type 
+              const file = new File([blob], `pasted-image-${Date.now()}.png`, {
+                type: blob.type,
               });
               setAnswerImage(file);
               setAnswerImagePreview(imageUrl);
@@ -118,7 +136,8 @@ export default function AddNotePage( ) {
     };
 
     // Create handler functions that we can reference for removal
-    const questionPasteHandler = (e: ClipboardEvent) => handlePaste(e, "question");
+    const questionPasteHandler = (e: ClipboardEvent) =>
+      handlePaste(e, "question");
     const answerPasteHandler = (e: ClipboardEvent) => handlePaste(e, "answer");
 
     // Add paste event listeners
@@ -132,7 +151,10 @@ export default function AddNotePage( ) {
     // Cleanup
     return () => {
       if (questionInputRef.current) {
-        questionInputRef.current.removeEventListener("paste", questionPasteHandler);
+        questionInputRef.current.removeEventListener(
+          "paste",
+          questionPasteHandler
+        );
       }
       if (answerInputRef.current) {
         answerInputRef.current.removeEventListener("paste", answerPasteHandler);
@@ -147,7 +169,7 @@ export default function AddNotePage( ) {
       questionAudioRef.current.onpause = () => setIsPlayingQuestionAudio(false);
       questionAudioRef.current.onended = () => setIsPlayingQuestionAudio(false);
     }
-    
+
     if (answerAudioUrl && answerAudioRef.current) {
       answerAudioRef.current.onplay = () => setIsPlayingAnswerAudio(true);
       answerAudioRef.current.onpause = () => setIsPlayingAnswerAudio(false);
@@ -173,19 +195,18 @@ export default function AddNotePage( ) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!question.trim() || !answer.trim()) {
       toast({
-        title:"Missing fields",
+        title: "Missing fields",
         description: "Please fill out all fields",
         variant: "destructive",
       });
       return;
     }
 
-    
     setIsSubmitting(true);
-    
+
     try {
       // First create the card - follow API structure exactly
       const cardData = {
@@ -193,79 +214,83 @@ export default function AddNotePage( ) {
         front_content: question,
         back_content: answer,
         source: null, // Optional source field
-        tags: [] // Optional tags array
+        tags: [], // Optional tags array
       };
 
-
       const token = localStorage.getItem("token");
-      
-      // Make API call to create the card - add trailing slash to match backend
-      const response = await fetch('http://localhost:8000/api/cards/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
 
+      // Make API call to create the card - add trailing slash to match backend
+      const response = await fetch("http://localhost:8000/api/cards/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify(cardData),
         credentials: "include",
       });
-      
+
       if (!response.ok) {
-        toast({title:"Failed To Add Card", variant: "destructive"})
+        toast({ title: "Failed To Add Card", variant: "destructive" });
         const error = await response.json();
-        throw new Error(error.detail || 'Failed to create card');
+        throw new Error(error.detail || "Failed to create card");
       }
-      
+
       const card = await response.json();
-  
-      
+
       // Now upload media files if they exist
       if (questionImage || answerImage || questionAudio || answerAudio) {
         const cardId = card.id;
-        
+
         const uploadPromises = [];
-        
+
         // Upload question image if exists
         if (questionImage) {
           uploadPromises.push(uploadMedia(cardId, questionImage, "front"));
         }
-        
+
         // Upload answer image if exists
         if (answerImage) {
           uploadPromises.push(uploadMedia(cardId, answerImage, "back"));
         }
-        
+
         // Upload question audio if exists
         if (questionAudio) {
           // Convert blob to file
-          const audioFile = new File([questionAudio], `question-audio-${Date.now()}.webm`, {
-            type: "audio/webm"
-          });
+          const audioFile = new File(
+            [questionAudio],
+            `question-audio-${Date.now()}.webm`,
+            {
+              type: "audio/webm",
+            }
+          );
           uploadPromises.push(uploadMedia(cardId, audioFile, "front"));
         }
-        
+
         // Upload answer audio if exists
         if (answerAudio) {
           // Convert blob to file
-          const audioFile = new File([answerAudio], `answer-audio-${Date.now()}.webm`, {
-            type: "audio/webm"
-          });
+          const audioFile = new File(
+            [answerAudio],
+            `answer-audio-${Date.now()}.webm`,
+            {
+              type: "audio/webm",
+            }
+          );
           uploadPromises.push(uploadMedia(cardId, audioFile, "back"));
         }
-        
+
         // Wait for all media uploads to complete
         await Promise.all(uploadPromises);
       }
       mutate();
-      
+
       toast({
         // title: "Success",
         title: "Card added successfully",
         variant: "default",
       });
-     
-      
+
       // Clear form fields after successful submission
       setQuestion("");
       setAnswer("");
@@ -277,16 +302,17 @@ export default function AddNotePage( ) {
       setQuestionAudioUrl(null);
       setAnswerAudio(null);
       setAnswerAudioUrl(null);
-      
 
       // After successful submission:
       // router.push(`/decks/${selectedDeck}`);
-      
     } catch (error) {
-      console.error('Error creating card:', error);
+      console.error("Error creating card:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create card. Please try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to create card. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -295,40 +321,46 @@ export default function AddNotePage( ) {
   };
 
   // Helper function to upload media
-  const uploadMedia = async (cardId: string, file: File | Blob, side: "front" | "back") => {
+  const uploadMedia = async (
+    cardId: string,
+    file: File | Blob,
+    side: "front" | "back"
+  ) => {
     try {
       const formData = new FormData();
-      formData.append("media_file", file);  // This matches your FastAPI parameter
-      formData.append("side", side);        // Make sure this matches case of your enum
-      
+      formData.append("media_file", file); // This matches your FastAPI parameter
+      formData.append("side", side); // Make sure this matches case of your enum
+
       const token = localStorage.getItem("token");
-      
-      const response = await fetch(`http://localhost:8000/api/cards/${cardId}/media`, {
-        method: "POST",
-        body: formData,
-        headers: {
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-          // Don't set Content-Type for FormData - the browser will set it with the proper boundary
-        },
-        credentials: "include",
-      });
-      
-      
-      
+
+      const response = await fetch(
+        `http://localhost:8000/api/cards/${cardId}/media`,
+        {
+          method: "POST",
+          body: formData,
+          headers: {
+            ...(token && { Authorization: `Bearer ${token}` }),
+            // Don't set Content-Type for FormData - the browser will set it with the proper boundary
+          },
+          credentials: "include",
+        }
+      );
+
       if (!response.ok) {
         console.error(`Server response status: ${response.status}`);
         const responseText = await response.text();
         console.error(`Server response: ${responseText}`);
         try {
           const error = JSON.parse(responseText);
-          throw new Error(error.detail || `Failed to upload ${side.toLowerCase()} media`);
+          throw new Error(
+            error.detail || `Failed to upload ${side.toLowerCase()} media`
+          );
         } catch (parseError) {
           throw new Error(`Failed to upload media: ${responseText}`);
         }
       }
-      
-      return response.json();
 
+      return response.json();
     } catch (error) {
       console.error(`Error uploading ${side.toLowerCase()} media:`, error);
       throw error;
@@ -337,7 +369,7 @@ export default function AddNotePage( ) {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     // Check file size (limit to 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
@@ -347,11 +379,11 @@ export default function AddNotePage( ) {
       });
       return;
     }
-    
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const imageUrl = event.target?.result as string;
-      
+
       if (activeMediaSection === "question") {
         setQuestionImage(file);
         setQuestionImagePreview(imageUrl);
@@ -375,17 +407,19 @@ export default function AddNotePage( ) {
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-      
+
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           audioChunksRef.current.push(e.data);
         }
       };
-      
+
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: "audio/webm",
+        });
         const audioUrl = URL.createObjectURL(audioBlob);
-        
+
         if (section === "question") {
           setQuestionAudio(audioBlob);
           setQuestionAudioUrl(audioUrl);
@@ -393,26 +427,27 @@ export default function AddNotePage( ) {
           setAnswerAudio(audioBlob);
           setAnswerAudioUrl(audioUrl);
         }
-        
+
         // Release tracks
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
         setIsRecording(false);
         setRecordingSection(null);
       };
-      
+
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingSection(section);
     } catch (error) {
-      console.error('Error starting recording:', error);
+      console.error("Error starting recording:", error);
       toast({
         title: "Error",
-        description: "Failed to access microphone. Please check your browser permissions.",
+        description:
+          "Failed to access microphone. Please check your browser permissions.",
         variant: "destructive",
       });
     }
   };
-  
+
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
@@ -432,7 +467,10 @@ export default function AddNotePage( ) {
     }
   };
 
-  const removeMedia = (type: "image" | "audio", section: "question" | "answer") => {
+  const removeMedia = (
+    type: "image" | "audio",
+    section: "question" | "answer"
+  ) => {
     if (type === "image") {
       if (section === "question") {
         setQuestionImage(null);
@@ -458,11 +496,11 @@ export default function AddNotePage( ) {
       title: `${section === "question" ? "Question" : "Answer"} Image`,
       description: (
         <div className="mt-2 flex flex-col items-center">
-          <Image 
-            src={image} 
-            alt={`${section} image preview`} 
-            width={250} 
-            height={150} 
+          <Image
+            src={image}
+            alt={`${section} image preview`}
+            width={250}
+            height={150}
             className="rounded-md object-contain max-h-[200px] border border-border"
             onError={() => {
               toast({
@@ -480,11 +518,12 @@ export default function AddNotePage( ) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none" />
-      <Link href="/decks/cards" className="pt-3 px-12">
+      <div className="absolute inset-0 bg-grid-pattern opacity-5  pointer-events-none" />
+      <Link href={""} className="pt-3 px-12">
         <Button
           variant="outline"
           size="icon"
+          onClick={() => router.back()}
           className="text-secondary-foreground border mb-4 border-divider rounded-full hover:text-foreground"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -492,27 +531,27 @@ export default function AddNotePage( ) {
       </Link>
       <form onSubmit={handleSubmit} className="flex-1 flex flex-col z-10">
         {/* Hidden file input */}
-        <input 
-          type="file" 
-          ref={imageInputRef} 
-          onChange={handleImageUpload} 
-          accept="image/*" 
-          className="hidden" 
+        <input
+          type="file"
+          ref={imageInputRef}
+          onChange={handleImageUpload}
+          accept="image/*"
+          className="hidden"
         />
-        
+
         {/* Hidden audio elements */}
         {questionAudioUrl && (
           <audio ref={questionAudioRef} className="hidden">
             <source src={questionAudioUrl} />
           </audio>
         )}
-        
+
         {answerAudioUrl && (
           <audio ref={answerAudioRef} className="hidden">
             <source src={answerAudioUrl} />
           </audio>
         )}
-        
+
         <div className="max-w-3xl w-full mx-auto flex-1 flex flex-col space-y-8">
           <div className="flex items-center gap-3">
             <div className="text-secondary-foreground text-sm">Deck:</div>
@@ -549,7 +588,7 @@ export default function AddNotePage( ) {
                     <Mic className="h-4 w-4" />
                   )}
                 </Button>
-                
+
                 <Button
                   type="button"
                   variant="outline"
@@ -562,7 +601,7 @@ export default function AddNotePage( ) {
                 </Button>
               </div>
             </div>
-            
+
             <div className="relative">
               <textarea
                 ref={questionInputRef}
@@ -575,7 +614,7 @@ export default function AddNotePage( ) {
                 }}
                 // placeholder="Enter your question here. Paste images directly or use the Add image button."
               />
-              
+
               {/* Media indicators */}
               <div className="absolute right-3 bottom-3 flex gap-2 z-10">
                 {questionImagePreview && (
@@ -590,8 +629,8 @@ export default function AddNotePage( ) {
                   >
                     <ImageIcon className="h-4 w-4 mr-1" />
                     <span className="text-xs">Image</span>
-                    <X 
-                      className="h-3 w-3 ml-1 hover:text-red-500" 
+                    <X
+                      className="h-3 w-3 ml-1 hover:text-red-500"
                       onClick={(e) => {
                         e.stopPropagation();
                         removeMedia("image", "question");
@@ -599,7 +638,7 @@ export default function AddNotePage( ) {
                     />
                   </button>
                 )}
-                
+
                 {questionAudioUrl && (
                   <button
                     type="button"
@@ -607,9 +646,11 @@ export default function AddNotePage( ) {
                     onClick={() => toggleAudioPlayback("question")}
                   >
                     <Volume2 className="h-4 w-4 mr-1" />
-                    <span className="text-xs">{isPlayingQuestionAudio ? "Playing" : "Audio"}</span>
-                    <X 
-                      className="h-3 w-3 ml-1 hover:text-red-500" 
+                    <span className="text-xs">
+                      {isPlayingQuestionAudio ? "Playing" : "Audio"}
+                    </span>
+                    <X
+                      className="h-3 w-3 ml-1 hover:text-red-500"
                       onClick={(e) => {
                         e.stopPropagation();
                         removeMedia("audio", "question");
@@ -640,7 +681,7 @@ export default function AddNotePage( ) {
                     <Mic className="h-4 w-4" />
                   )}
                 </Button>
-                
+
                 <Button
                   type="button"
                   variant="outline"
@@ -653,7 +694,7 @@ export default function AddNotePage( ) {
                 </Button>
               </div>
             </div>
-            
+
             <div className="relative flex-1">
               <textarea
                 ref={answerInputRef}
@@ -667,7 +708,7 @@ export default function AddNotePage( ) {
                 }}
                 // placeholder="Enter your answer here. Paste images directly or use the Add image button."
               />
-              
+
               {/* Media indicators - Fixed positioning to prevent overflow */}
               <div className="absolute right-3 bottom-3 flex flex-col gap-2 max-w-[40%] z-10">
                 {answerImagePreview && (
@@ -682,8 +723,8 @@ export default function AddNotePage( ) {
                   >
                     <ImageIcon className="h-4 w-4 mr-1 flex-shrink-0" />
                     <span className="text-xs truncate">Image</span>
-                    <X 
-                      className="h-3 w-3 ml-1 hover:text-red-500 flex-shrink-0" 
+                    <X
+                      className="h-3 w-3 ml-1 hover:text-red-500 flex-shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         removeMedia("image", "answer");
@@ -691,7 +732,7 @@ export default function AddNotePage( ) {
                     />
                   </button>
                 )}
-                
+
                 {answerAudioUrl && (
                   <button
                     type="button"
@@ -699,9 +740,11 @@ export default function AddNotePage( ) {
                     onClick={() => toggleAudioPlayback("answer")}
                   >
                     <Volume2 className="h-4 w-4 mr-1 flex-shrink-0" />
-                    <span className="text-xs truncate">{isPlayingAnswerAudio ? "Playing" : "Audio"}</span>
-                    <X 
-                      className="h-3 w-3 ml-1 hover:text-red-500 flex-shrink-0" 
+                    <span className="text-xs truncate">
+                      {isPlayingAnswerAudio ? "Playing" : "Audio"}
+                    </span>
+                    <X
+                      className="h-3 w-3 ml-1 hover:text-red-500 flex-shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         removeMedia("audio", "answer");
@@ -719,7 +762,7 @@ export default function AddNotePage( ) {
             type="button"
             variant="outline"
             className="flex-1 border-border hover:bg-muted"
-            onClick={() =>   router.back()}
+            onClick={() => router.back()}
             disabled={isSubmitting}
           >
             Close
@@ -743,4 +786,3 @@ export default function AddNotePage( ) {
     </div>
   );
 }
-  

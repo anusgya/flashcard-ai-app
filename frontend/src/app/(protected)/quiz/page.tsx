@@ -9,14 +9,12 @@ interface Deck {
   id: string;
   name: string;
   description: string;
-  card_count?: number;
+  total_cards?: number;
   is_public?: boolean;
   source_type?: string;
   created_at?: string;
   updated_at?: string;
 }
-
-
 
 export default function QuizPage() {
   const { decks } = useDecks();
@@ -46,7 +44,7 @@ export default function QuizPage() {
         initial="hidden"
         animate="show"
       >
-        {decks?.map((deck:Deck) => (
+        {decks?.map((deck: Deck) => (
           <motion.div
             key={deck.id}
             variants={{
@@ -57,8 +55,7 @@ export default function QuizPage() {
             <QuizCard
               deck_id={deck.id}
               title={deck.name}
-              cardsCount={deck.card_count||0}
-            
+              cardsCount={deck.total_cards || 0}
             />
           </motion.div>
         ))}

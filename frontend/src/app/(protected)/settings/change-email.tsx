@@ -12,7 +12,6 @@ export function ChangeEmail() {
   const { user, mutate } = useMe();
   const [currentEmail, setCurrentEmail] = useState("");
   const [newEmail, setNewEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
@@ -20,7 +19,7 @@ export function ChangeEmail() {
     e.preventDefault();
 
     // Basic validation
-    if (!currentEmail.trim() || !newEmail.trim() || !password.trim()) {
+    if (!currentEmail.trim() || !newEmail.trim()) {
       toast({
         title: "Error",
         description: "All fields are required",
@@ -53,14 +52,12 @@ export function ChangeEmail() {
     setIsLoading(true);
 
     try {
-      // Call the API to update the email
+      // Call the API to update the email (without password)
       const response = await updateUserProfile({
         email: newEmail,
-        password: password, // For verification
       });
-      
+
       console.log("response", response);
-      // If the backend returns a new token, update it
       // Update the local state with the new data
       mutate();
 
@@ -73,11 +70,10 @@ export function ChangeEmail() {
       // Reset form
       setCurrentEmail("");
       setNewEmail("");
-      setPassword("");
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update email. Please check your password and try again.",
+        description: "Failed to update email. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -91,9 +87,9 @@ export function ChangeEmail() {
         <Label htmlFor="current-email" className="text-secondary-foreground">
           Current Email
         </Label>
-        <Input 
-          id="current-email" 
-          type="email" 
+        <Input
+          id="current-email"
+          type="email"
           value={currentEmail}
           onChange={(e) => setCurrentEmail(e.target.value)}
           placeholder={user?.email || ""}
@@ -103,25 +99,14 @@ export function ChangeEmail() {
         <Label htmlFor="new-email" className="text-secondary-foreground">
           New Email
         </Label>
-        <Input 
-          id="new-email" 
-          type="email" 
+        <Input
+          id="new-email"
+          type="email"
           value={newEmail}
           onChange={(e) => setNewEmail(e.target.value)}
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="password" className="text-secondary-foreground">
-          Password
-        </Label>
-        <Input 
-          id="password" 
-          type="password" 
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </div>
-      <Button 
+      <Button
         type="submit"
         className="w-48 bg-primary-green text-muted font-semibold hover:border-0"
         disabled={isLoading}

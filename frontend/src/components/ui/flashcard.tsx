@@ -11,8 +11,9 @@ import Image from "next/image";
 export interface FlashcardProps {
   question: string;
   answer: string;
-  mnemonics?: string;
-  examples?: string[];
+  mnemonic?: string;
+  example?: string[];
+  eli5?: string;
   frontImageUrl?: string;
   frontAudioUrl?: string;
   backImageUrl?: string;
@@ -26,8 +27,9 @@ export function Flashcard(props: FlashcardProps) {
   const {
     question,
     answer,
-    mnemonics,
-    examples,
+    mnemonic,
+    example,
+    eli5, // Add this line to destructure the explanation prop
     frontImageUrl,
     frontAudioUrl,
     backImageUrl,
@@ -87,19 +89,20 @@ export function Flashcard(props: FlashcardProps) {
   return (
     <div className="min-h-screen bg-background py-3 px-12">
       {/* Top navigation */}
-      <Link href="/learn/" className="">
+     
         <Button
           variant="outline"
           size="icon"
+          onClick={() => router.back()}
           className="text-secondary-foreground border mb-4 border-divider rounded-full hover:text-foreground"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-      </Link>
+
 
       {/* Card stack container */}
       <div className="flex-1 flex justify-center px-4 py-2 mt-16">
-        <div className="relative w-full max-w-3xl">
+        <div className="relative w-full max-w-4xl">
           {/* Main card with flip effect */}
           <div className="h-[600px] [perspective:1000px]">
             <div
@@ -174,7 +177,20 @@ export function Flashcard(props: FlashcardProps) {
                 className="absolute inset-0 [transform:rotateY(180deg)] [backface-visibility:hidden]"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="p-4 rounded-lg border flex flex-col gap-4 border-border bg-muted h-full overflow-hidden">
+                <div className="p-4 rounded-lg border flex flex-col gap-2 border-border bg-muted h-full overflow-hidden">
+                  <div className="flex justify-between items-center">
+                    <div></div>
+                    <Button
+                      variant={"ghost"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFlip();
+                      }}
+                      className="text-secondary-foreground bg-background hover:text-foreground"
+                    >
+                      Show Question
+                    </Button>
+                  </div>
                   <div className="">
                     {/* <Button
                       variant="ghost"
@@ -187,7 +203,7 @@ export function Flashcard(props: FlashcardProps) {
                     >
                       <Pencil className="h-4 w-4" />
                     </Button> */}
-                    <Button
+                    {/* <Button
                       variant={"ghost"}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -196,18 +212,21 @@ export function Flashcard(props: FlashcardProps) {
                       className="text-secondary-foreground bg-background hover:text-foreground"
                     >
                       Show Question
-                    </Button>
+                    </Button> */}
                   </div>
 
                   <Tabs defaultValue="answer" className="h-full overflow-hidden flex flex-col">
                     <div onClick={(e) => e.stopPropagation()}>
-                      <TabsList className="grid w-full grid-cols-4 text-secondary-foreground border border-divider">
+                      <TabsList className="grid w-full grid-cols-5 text-secondary-foreground border border-divider">
                         <TabsTrigger value="answer">Answer</TabsTrigger>
-                        {mnemonics && (
-                          <TabsTrigger value="mnemonics">Mnemonics</TabsTrigger>
+                        {eli5 && (
+                          <TabsTrigger value="eli5">Eli5</TabsTrigger>
                         )}
-                        {examples && examples.length > 0 && (
-                          <TabsTrigger value="examples">Examples</TabsTrigger>
+                        {mnemonic && (
+                          <TabsTrigger value="mnemonic">Mnemonic</TabsTrigger>
+                        )}
+                        {example && example.length > 0 && (
+                          <TabsTrigger value="example">Example</TabsTrigger>
                         )}
                         {(backImageUrl || backAudioUrl) && (
                           <TabsTrigger value="media">Media</TabsTrigger>
@@ -220,36 +239,45 @@ export function Flashcard(props: FlashcardProps) {
                       className="h-[calc(100%-50px)] overflow-auto"
                       onClick={(e) => e.stopPropagation()} // Prevent flip when clicking content
                     >
-                      <div className="p-4 text-lg">{answer}</div>
+                      <div className="p-4 text-lg whitespace-pre-wrap">{answer}</div>
                     </TabsContent>
 
-                    {mnemonics && (
+                    {eli5 && (
                       <TabsContent
-                        value="mnemonics"
+                        value="eli5"
                         className="h-[calc(100%-50px)] overflow-auto"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="p-4 space-y-4">
-                          <h3 className="text-lg font-semibold">
-                            Mnemonic Device
-                          </h3>
-                          <div>{mnemonics}</div>
+                          <div className="whitespace-pre-wrap text-lg">{eli5}</div>
                         </div>
                       </TabsContent>
                     )}
 
-                    {examples && examples.length > 0 && (
+                    {mnemonic && (
                       <TabsContent
-                        value="examples"
+                        value="mnemonic"
                         className="h-[calc(100%-50px)] overflow-auto"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="p-4 space-y-4">
-                          <h3 className="text-lg font-semibold">Examples</h3>
-                          {examples.map((example, index) => (
+                          <div className="whitespace-pre-wrap text-lg">{mnemonic}</div>
+                        </div>
+                      </TabsContent>
+                    )}
+
+                    {example && example.length > 0 && (
+                      <TabsContent
+                        value="example"
+                        className="h-[calc(100%-50px)] overflow-auto"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="p-4 space-y-4 text-lg">
+                          {/* <h3 className="text-lg font-semibold">example</h3> */}
+                          {example.map((example, index) => (
                             <div
                               key={index}
-                              className="p-4 bg-secondary rounded-lg"
+                              className="whitespace-pre-wrap"
                             >
                               {example}
                             </div>

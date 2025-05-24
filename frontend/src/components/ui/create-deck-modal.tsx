@@ -54,7 +54,7 @@ export function CreateDeckModal({onDeckCreated}: {onDeckCreated: () => void}) {
       <DialogTrigger asChild>
         <Button className="bg-primary-green font-semibold hover:bg-primary-green/90 hover:border-0 text-muted">
           <Plus className="h-4 w-4" />
-          Create
+          Create Deck
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] border-divider">

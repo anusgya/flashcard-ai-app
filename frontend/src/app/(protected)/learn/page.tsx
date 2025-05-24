@@ -11,6 +11,8 @@ interface Deck {
   source_type?: string;
   created_at?: string;
   updated_at?: string;
+  learning_cards?: number;
+  total_cards?: number;
 }
 
 
@@ -33,8 +35,8 @@ export default function LearnPage() {
             key={deck.id}
             id={deck.id}
             title={deck.name}
-            progress={70}
-            cardsCount={deck.card_count||0}
+            learningCount={deck.learning_cards||0}
+            totalCount={deck.total_cards||0}
           />
         ))}
       </div>

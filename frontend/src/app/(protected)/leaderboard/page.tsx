@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect, useRef } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Trophy,
   Medal,
@@ -17,16 +17,16 @@ import {
   ArrowRight,
   Users,
   BarChart3,
-} from "lucide-react"
+} from "lucide-react";
 
 interface LeaderboardUser {
-  id: number
-  name: string
-  points: number
-  avatar: string
-  rank: number
-  change?: "up" | "down" | "same"
-  streak?: number
+  id: number;
+  name: string;
+  points: number;
+  avatar: string;
+  rank: number;
+  change?: "up" | "down" | "same";
+  streak?: number;
 }
 
 const topUsers: LeaderboardUser[] = [
@@ -34,7 +34,7 @@ const topUsers: LeaderboardUser[] = [
     id: 2,
     name: "Ben Smith",
     points: 2030,
-    avatar: "/placeholder.svg?height=40&width=40",
+    avatar: "/media/avatars/Ellipse4.png",
     rank: 2,
     change: "up",
     streak: 5,
@@ -43,7 +43,7 @@ const topUsers: LeaderboardUser[] = [
     id: 1,
     name: "Sophia Carter",
     points: 7200,
-    avatar: "/placeholder.svg?height=40&width=40",
+    avatar: "/media/avatars/Ellipse6.png",
     rank: 1,
     change: "same",
     streak: 12,
@@ -52,12 +52,12 @@ const topUsers: LeaderboardUser[] = [
     id: 3,
     name: "James Thompson",
     points: 2200,
-    avatar: "/placeholder.svg?height=40&width=40",
+    avatar: "/media/avatars/Ellipse5.png",
     rank: 3,
     change: "down",
     streak: 3,
   },
-]
+];
 
 const otherUsers: LeaderboardUser[] = Array(7)
   .fill(null)
@@ -65,47 +65,57 @@ const otherUsers: LeaderboardUser[] = Array(7)
     id: i + 4,
     name: `User ${i + 4}`,
     points: 2100 - i * 150,
-    avatar: "/placeholder.svg?height=40&width=40",
+    avatar: "/media/avatars/Ellipse7.png",
     rank: i + 4,
     change: i % 3 === 0 ? "up" : i % 3 === 1 ? "down" : "same",
     streak: Math.floor(Math.random() * 7) + 1,
-  }))
+  }));
 
 export default function LeaderboardPage() {
-  const [animate, setAnimate] = useState(false)
-  const [activeTab, setActiveTab] = useState<"weekly" | "monthly" | "allTime">("weekly")
-  
+  const [animate, setAnimate] = useState(false);
+  const [activeTab, setActiveTab] = useState<"weekly" | "monthly" | "allTime">(
+    "weekly"
+  );
+
   useEffect(() => {
-    setAnimate(true)
-  }, [])
+    setAnimate(true);
+  }, []);
 
   // Get medal color based on rank
   const getMedalColor = (rank: number) => {
     switch (rank) {
       case 1:
-        return "#4CAF50" // Green
+        return "#4CAF50"; // Green
       case 2:
-        return "#2196F3" // Blue
+        return "#2196F3"; // Blue
       case 3:
-        return "#FF9800" // Orange
+        return "#FF9800"; // Orange
       default:
-        return "#64748b" // Slate
+        return "#64748b"; // Slate
     }
-  }
+  };
 
   // Get trophy icon based on rank
   const getTrophyIcon = (rank: number, className = "") => {
     switch (rank) {
       case 1:
-        return <Crown className={className} style={{ color: getMedalColor(1) }} />
+        return (
+          <Crown className={className} style={{ color: getMedalColor(1) }} />
+        );
       case 2:
-        return <Trophy className={className} style={{ color: getMedalColor(2) }} />
+        return (
+          <Trophy className={className} style={{ color: getMedalColor(2) }} />
+        );
       case 3:
-        return <Medal className={className} style={{ color: getMedalColor(3) }} />
+        return (
+          <Medal className={className} style={{ color: getMedalColor(3) }} />
+        );
       default:
-        return <Star className={className} style={{ color: getMedalColor(4) }} />
+        return (
+          <Star className={className} style={{ color: getMedalColor(4) }} />
+        );
     }
-  }
+  };
 
   return (
     <main className="flex flex-col bg-background items-center min-h-screen pb-16 relative overflow-hidden">
@@ -117,7 +127,9 @@ export default function LeaderboardPage() {
         {/* Page Title */}
         <div className="flex flex-col gap-2">
           <div className="text-2xl font-bold ">Leaderboard</div>
-          <p className="font-fragment-mono text-sm text-secondary-foreground">See how you are doing in comparison to others</p>
+          <p className="font-fragment-mono text-sm text-secondary-foreground">
+            See how you are doing in comparison to others
+          </p>
         </div>
 
         {/* Stats Cards - already commented out, keeping as is */}
@@ -134,7 +146,9 @@ export default function LeaderboardPage() {
                 <div className="relative">
                   <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <span className="text-2xl font-bold text-foreground relative z-10">#4</span>
+                    <span className="text-2xl font-bold text-foreground relative z-10">
+                      #4
+                    </span>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                   </div>
                   <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
@@ -142,8 +156,12 @@ export default function LeaderboardPage() {
                   </div>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-foreground">Your Rank</h2>
-                  <p className="text-secondary-foreground">Top 40% of all users</p>
+                  <h2 className="text-xl font-bold text-foreground">
+                    Your Rank
+                  </h2>
+                  <p className="text-secondary-foreground">
+                    Top 40% of all users
+                  </p>
                 </div>
               </div>
 
@@ -154,9 +172,14 @@ export default function LeaderboardPage() {
                   <p className="text-foreground font-medium">1,950 points</p>
                   <div className="flex items-center gap-2">
                     <div className="w-full bg-accent/70 h-1.5 rounded-full mt-1">
-                      <div className="bg-blue-500 h-full rounded-full" style={{ width: "80%" }}></div>
+                      <div
+                        className="bg-blue-500 h-full rounded-full"
+                        style={{ width: "80%" }}
+                      ></div>
                     </div>
-                    <p className="text-xs text-secondary-foreground whitespace-nowrap">50 pts to rank 3</p>
+                    <p className="text-xs text-secondary-foreground whitespace-nowrap">
+                      50 pts to rank 3
+                    </p>
                   </div>
                 </div>
               </div>
@@ -173,12 +196,23 @@ export default function LeaderboardPage() {
           <div className="relative z-10">
             <div className="flex justify-center items-end h-[340px] pt-16">
               {topUsers.map((user) => {
-                const height = user.rank === 1 ? "h-64" : user.rank === 2 ? "h-52" : "h-40"
-                const order = user.rank === 1 ? "order-2" : user.rank === 2 ? "order-1" : "order-3"
-                const avatarSize = user.rank === 1 ? "h-24 w-24" : "h-20 w-20"
-                const delay = user.rank === 1 ? "delay-300" : user.rank === 2 ? "delay-100" : "delay-500"
-                const translateY = animate ? "translate-y-0" : "translate-y-20"
-                const opacity = animate ? "opacity-100" : "opacity-0"
+                const height =
+                  user.rank === 1 ? "h-64" : user.rank === 2 ? "h-52" : "h-40";
+                const order =
+                  user.rank === 1
+                    ? "order-2"
+                    : user.rank === 2
+                    ? "order-1"
+                    : "order-3";
+                const avatarSize = user.rank === 1 ? "h-24 w-24" : "h-20 w-20";
+                const delay =
+                  user.rank === 1
+                    ? "delay-300"
+                    : user.rank === 2
+                    ? "delay-100"
+                    : "delay-500";
+                const translateY = animate ? "translate-y-0" : "translate-y-20";
+                const opacity = animate ? "opacity-100" : "opacity-0";
 
                 return (
                   <div
@@ -190,7 +224,7 @@ export default function LeaderboardPage() {
                       <div className="relative mb-4 group">
                         <div
                           className={`${avatarSize} rounded-full bg-accent border-4 relative overflow-hidden transition-transform duration-300 group-hover:scale-105`}
-                          style={{ borderColor: getMedalColor(user.rank) }}
+                          // style={{ borderColor: getMedalColor(user.rank) }}
                         >
                           <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center">
                             <img
@@ -202,7 +236,7 @@ export default function LeaderboardPage() {
                           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </div>
                         {user.rank === 1 && (
-                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 animate-bounce">
+                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 ">
                             <span className="text-4xl">👑</span>
                           </div>
                         )}
@@ -224,9 +258,11 @@ export default function LeaderboardPage() {
                       </div>
 
                       <div className="text-center mb-4">
-                        <p className="font-bold text-foreground whitespace-normal break-words px-2">{user.name}</p>
+                        <p className="font-bold text-foreground whitespace-normal break-words px-2">
+                          {user.name}
+                        </p>
                         <div className="flex items-center justify-center gap-1 mt-1">
-                          <p className="text-sm font-mono font-medium text-secondary-foreground" >
+                          <p className="text-sm font-mono font-medium text-secondary-foreground">
                             {user.points.toLocaleString()} pts
                           </p>
                           {user.streak && (
@@ -241,7 +277,9 @@ export default function LeaderboardPage() {
                       <div
                         className={`w-full ${height} rounded-t-xl flex items-center justify-center relative overflow-hidden group`}
                         style={{
-                          background: `linear-gradient(to top, ${getMedalColor(user.rank)}20, ${getMedalColor(user.rank)}40)`,
+                          background: `linear-gradient(to top, ${getMedalColor(
+                            user.rank
+                          )}20, ${getMedalColor(user.rank)}40)`,
                           boxShadow: `0 0 20px ${getMedalColor(user.rank)}30`,
                         }}
                       >
@@ -259,7 +297,7 @@ export default function LeaderboardPage() {
                       </div>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           </div>
@@ -272,9 +310,9 @@ export default function LeaderboardPage() {
           </div>
 
           {otherUsers.map((user, index) => {
-            const delay = `delay-${(index + 1) * 100}`
-            const translateX = animate ? "translate-x-0" : "translate-x-10"
-            const opacity = animate ? "opacity-100" : "opacity-0"
+            const delay = `delay-${(index + 1) * 100}`;
+            const translateX = animate ? "translate-x-0" : "translate-x-10";
+            const opacity = animate ? "opacity-100" : "opacity-0";
 
             return (
               <div key={user.id}>
@@ -283,7 +321,11 @@ export default function LeaderboardPage() {
                 >
                   <div
                     className="absolute inset-y-0 left-0 w-1"
-                    style={{ backgroundColor: getMedalColor(user.rank > 3 ? 4 : user.rank) }}
+                    style={{
+                      backgroundColor: getMedalColor(
+                        user.rank > 3 ? 4 : user.rank
+                      ),
+                    }}
                   ></div>
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
@@ -293,7 +335,11 @@ export default function LeaderboardPage() {
                     </span>
 
                     <Avatar className="h-10 w-10 bg-accent border-2 border-divider relative overflow-hidden">
-                      <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} className="object-cover" />
+                      <AvatarImage
+                        src={user.avatar || "/placeholder.svg"}
+                        alt={user.name}
+                        className="object-cover"
+                      />
                       <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </Avatar>
@@ -320,24 +366,31 @@ export default function LeaderboardPage() {
                             user.change === "up"
                               ? "text-green-500"
                               : user.change === "down"
-                                ? "text-orange-500"
-                                : "text-secondary-foreground"
+                              ? "text-orange-500"
+                              : "text-secondary-foreground"
                           }`}
                         >
                           {user.change === "up" && <ChevronUp size={16} />}
-                          {user.change === "down" && <ChevronUp size={16} className="rotate-180" />}
-                          {user.change === "same" && <span className="text-xs">-</span>}
+                          {user.change === "down" && (
+                            <ChevronUp size={16} className="rotate-180" />
+                          )}
+                          {user.change === "same" && (
+                            <span className="text-xs">-</span>
+                          )}
                         </div>
                       )}
 
                       <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/50 group-hover:bg-accent transition-colors duration-300">
-                        {getTrophyIcon(user.rank > 3 ? 4 : user.rank, "h-4 w-4")}
+                        {getTrophyIcon(
+                          user.rank > 3 ? 4 : user.rank,
+                          "h-4 w-4"
+                        )}
                       </div>
                     </div>
                   </div>
                 </Card>
               </div>
-            )
+            );
           })}
 
           {/* Show more button */}
@@ -353,5 +406,5 @@ export default function LeaderboardPage() {
         {/* Achievement badges section - already commented out, keeping as is */}
       </div>
     </main>
-  )
+  );
 }

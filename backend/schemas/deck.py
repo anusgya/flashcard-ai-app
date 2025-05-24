@@ -10,7 +10,7 @@ from schemas.card import CardResponse
 class SourceType(str, Enum):
     MANUAL = "manual"
     CSV = "csv"
-    ANKI = "anki"
+    TEXT = "text"
     PDF = "pdf"
 
 # Base schema for shared properties
@@ -30,7 +30,9 @@ class DeckResponse(DeckBase):
     user_id: UUID4
     created_at: datetime
     updated_at: datetime
-    card_count: Optional[int] = 0
+    # card_count: Optional[int] = 0
+    total_cards: Optional[int] = None
+    learning_cards: Optional[int] = None
     
     class Config:
         from_attributes = True  # Updated from orm_mode
@@ -38,7 +40,6 @@ class DeckResponse(DeckBase):
 # Detailed deck response with cards
 class DeckDetailResponse(DeckResponse):
     cards: List[CardResponse] = []
-    
     class Config:
         from_attributes = True
 

@@ -14,6 +14,10 @@ import {
 } from "@/hooks/api/useStudy";
 import { UUID } from "crypto";
 import { ResponseQuality, ConfidenceLevel } from "@/enums";
+import { 
+  useCardLLMResponses, 
+  ResponseType 
+} from "@/hooks/api/useLLMResponses";
 
 interface CardMedia {
   id: string;
@@ -25,6 +29,15 @@ interface CardMedia {
   file_size: number;
   uploaded_at: string;
   side: string;
+}
+
+interface LLMResponse {
+  id: string;
+  card_id: string;
+  response_type: ResponseType;
+  content: string;
+  is_pinned: boolean;
+  generated_at: string;
 }
 
 interface Card {
@@ -119,6 +132,27 @@ export default function LearnPage() {
     isLoading: isLoadingCardDetails,
     isError: isErrorCardDetails,
   } = useCard(nextCard?.card_id || '');
+
+  // 4. Fetch LLM responses for the current card
+  const { 
+    responses: llmResponses, 
+    isLoading: loadingResponses, 
+    isError: responseError 
+  } = useCardLLMResponses(nextCard?.card_id || '');
+
+  // Group responses by type
+  const mnemonics = llmResponses?.filter((r: LLMResponse) => r.response_type === 'mnemonic') || [];
+  const examples = llmResponses?.filter((r: LLMResponse) => r.response_type === 'example') || [];
+  const explanations = llmResponses?.filter((r: LLMResponse) => r.response_type === 'explanation') || [];
+  
+  // Get the most recent ones
+  const latestMnemonic = mnemonics[0];
+  const latestExample = examples[0];
+  const latestExplanation = explanations[0];
+
+
+  console.log("explanation", latestExplanation?.content)
+
 
   // Start timer when a new card is loaded and ready
   useEffect(() => {
@@ -224,8 +258,9 @@ export default function LearnPage() {
   const flashcardProps = {
     question: currentCard.front_content,
     answer: currentCard.back_content,
-    mnemonics: currentCard.mnemonics,
-    examples: currentCard.examples,
+    mnemonic: latestMnemonic?.content,
+    example: latestExample ? [latestExample.content] : undefined,
+    eli5: latestExplanation?.content,
     frontImageUrl: formatMediaUrl(frontImage),
     frontAudioUrl: formatMediaUrl(frontAudio),
     backImageUrl: formatMediaUrl(backImage),

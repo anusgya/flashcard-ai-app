@@ -12,14 +12,14 @@ import {
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { 
-  useCardLLMResponses, 
-  generateMnemonic, 
-  generateExplanation, 
-  generateExamples, 
+import {
+  useCardLLMResponses,
+  generateMnemonic,
+  generateExplanation,
+  generateExamples,
   updateLLMResponse,
   deleteLLMResponse,
-  ResponseType
+  ResponseType,
 } from "@/hooks/api/useLLMResponses";
 
 interface PageProps {
@@ -114,21 +114,30 @@ export default function CardDetailPage() {
   const [card, setCard] = useState<CardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [generatingType, setGeneratingType] = useState<ResponseType | null>(null);
-  const params = useParams<{deckId: string, cardId: string}>();
-  
+  const [generatingType, setGeneratingType] = useState<ResponseType | null>(
+    null
+  );
+  const params = useParams<{ deckId: string; cardId: string }>();
+
   // Fetch LLM responses
-  const { 
-    responses: llmResponses, 
-    isLoading:loadingResponses, 
+  const {
+    responses: llmResponses,
+    isLoading: loadingResponses,
     isError: responseError,
-    mutate: mutateResponses
+    mutate: mutateResponses,
   } = useCardLLMResponses(params.cardId);
 
   // Group responses by type
-  const mnemonics = llmResponses?.filter((r: LLMResponse) => r.response_type === 'mnemonic') || [];
-  const explanations = llmResponses?.filter((r: LLMResponse) => r.response_type === 'explanation') || [];
-  const examples = llmResponses?.filter((r: LLMResponse) => r.response_type === 'example') || [];
+  const mnemonics =
+    llmResponses?.filter((r: LLMResponse) => r.response_type === "mnemonic") ||
+    [];
+  const explanations =
+    llmResponses?.filter(
+      (r: LLMResponse) => r.response_type === "explanation"
+    ) || [];
+  const examples =
+    llmResponses?.filter((r: LLMResponse) => r.response_type === "example") ||
+    [];
 
   // Get the most recent ones
   const latestMnemonic = mnemonics[0];
@@ -146,28 +155,33 @@ export default function CardDetailPage() {
       try {
         setLoading(true);
         const token = localStorage.getItem("token");
-        
-        const response = await fetch(`http://localhost:8000/api/cards/${params.cardId}`, {
-          headers: {
-            ...(token && { 'Authorization': `Bearer ${token}` }),
-          },
-          credentials: "include",
-        });
-        
+
+        const response = await fetch(
+          `http://localhost:8000/api/cards/${params.cardId}`,
+          {
+            headers: {
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+            credentials: "include",
+          }
+        );
+
         if (!response.ok) {
           throw new Error(`Failed to fetch card: ${response.status}`);
         }
-        
+
         const data = await response.json();
         setCard(data);
       } catch (error) {
         console.error("Error fetching card:", error);
-        setError(error instanceof Error ? error.message : "Failed to load card");
+        setError(
+          error instanceof Error ? error.message : "Failed to load card"
+        );
       } finally {
         setLoading(false);
       }
     };
-    
+
     if (params.cardId) {
       fetchCard();
     }
@@ -176,10 +190,10 @@ export default function CardDetailPage() {
   // Handle generating new responses
   const handleGenerateMnemonic = async () => {
     if (!card) return;
-    
+
     try {
-      setGeneratingType('mnemonic');
-      await generateMnemonic(params.cardId,"");
+      setGeneratingType("mnemonic");
+      await generateMnemonic(params.cardId, "");
       await mutateResponses();
     } catch (error) {
       console.error("Error generating mnemonic:", error);
@@ -190,10 +204,10 @@ export default function CardDetailPage() {
 
   const handleGenerateExplanation = async () => {
     if (!card) return;
-    
+
     try {
-      setGeneratingType('explanation');
-      await generateExplanation(params.cardId, 'basic');
+      setGeneratingType("explanation");
+      await generateExplanation(params.cardId, "basic");
       await mutateResponses();
     } catch (error) {
       console.error("Error generating explanation:", error);
@@ -204,9 +218,9 @@ export default function CardDetailPage() {
 
   const handleGenerateExamples = async () => {
     if (!card) return;
-    
+
     try {
-      setGeneratingType('example');
+      setGeneratingType("example");
       await generateExamples(params.cardId, 1);
       await mutateResponses();
     } catch (error) {
@@ -237,8 +251,10 @@ export default function CardDetailPage() {
   };
 
   // Get front and back media
-  const frontMedia = card?.media?.filter(m => m.side.toLowerCase() === "front");
-  const backMedia = card?.media?.filter(m => m.side.toLowerCase() === "back");
+  const frontMedia = card?.media?.filter(
+    (m) => m.side.toLowerCase() === "front"
+  );
+  const backMedia = card?.media?.filter((m) => m.side.toLowerCase() === "back");
 
   // Loading state
   if (loading) {
@@ -317,21 +333,21 @@ export default function CardDetailPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="cursor-pointer"
                       onClick={handleGenerateMnemonic}
                       disabled={!!generatingType}
                     >
                       Generate Mnemonic
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="cursor-pointer"
                       onClick={handleGenerateExamples}
                       disabled={!!generatingType}
                     >
                       Provide Example
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="cursor-pointer"
                       onClick={handleGenerateExplanation}
                       disabled={!!generatingType}
@@ -342,16 +358,19 @@ export default function CardDetailPage() {
                 </DropdownMenu>
               </div>
             </div>
-            
+
             {/* Front media */}
             {frontMedia && frontMedia.length > 0 && (
               <div className="mt-4">
                 {frontMedia.map((media) => (
                   <div key={media.id} className="mb-4">
-                    {media.media_type.toLowerCase() === 'image' && (
+                    {media.media_type.toLowerCase() === "image" && (
                       <div className="border border-divider rounded-md overflow-hidden">
-                        <Image 
-                          src={`http://localhost:8000/${media.file_path.replace(/\\/g, '/')}`}
+                        <Image
+                          src={`http://localhost:8000/${media.file_path.replace(
+                            /\\/g,
+                            "/"
+                          )}`}
                           alt="Question media"
                           width={500}
                           height={300}
@@ -359,9 +378,14 @@ export default function CardDetailPage() {
                         />
                       </div>
                     )}
-                    {media.media_type.toLowerCase() === 'audio' && (
+                    {media.media_type.toLowerCase() === "audio" && (
                       <audio controls className="w-full mt-2">
-                        <source src={`http://localhost:8000/${media.file_path.replace(/\\/g, '/')}`} />
+                        <source
+                          src={`http://localhost:8000/${media.file_path.replace(
+                            /\\/g,
+                            "/"
+                          )}`}
+                        />
                         Your browser does not support the audio element.
                       </audio>
                     )}
@@ -369,22 +393,26 @@ export default function CardDetailPage() {
                 ))}
               </div>
             )}
-            
+
+            <div className="w-full h-px bg-divider my-6"></div>
             {/* Answer section */}
             <div className="mt-8">
               <div className="text-foreground leading-relaxed">
                 {card.back_content}
               </div>
-              
+
               {/* Back media */}
               {backMedia && backMedia.length > 0 && (
                 <div className="mt-4">
                   {backMedia.map((media) => (
                     <div key={media.id} className="mb-4">
-                      {media.media_type.toLowerCase() === 'image' && (
+                      {media.media_type.toLowerCase() === "image" && (
                         <div className="border border-divider rounded-md overflow-hidden">
-                          <Image 
-                            src={`http://localhost:8000/${media.file_path.replace(/\\/g, '/')}`}
+                          <Image
+                            src={`http://localhost:8000/${media.file_path.replace(
+                              /\\/g,
+                              "/"
+                            )}`}
                             alt="Answer media"
                             width={500}
                             height={300}
@@ -392,9 +420,14 @@ export default function CardDetailPage() {
                           />
                         </div>
                       )}
-                      {media.media_type.toLowerCase() === 'audio' && (
+                      {media.media_type.toLowerCase() === "audio" && (
                         <audio controls className="w-full mt-2">
-                          <source src={`http://localhost:8000/${media.file_path.replace(/\\/g, '/')}`} />
+                          <source
+                            src={`http://localhost:8000/${media.file_path.replace(
+                              /\\/g,
+                              "/"
+                            )}`}
+                          />
                           Your browser does not support the audio element.
                         </audio>
                       )}
@@ -414,7 +447,7 @@ export default function CardDetailPage() {
             ) : (
               <>
                 {displayedMnemonic && (
-                  <InfoBox 
+                  <InfoBox
                     title="Mnemonic device"
                     onDelete={() => handleDeleteResponse(displayedMnemonic.id)}
                   >
@@ -425,7 +458,7 @@ export default function CardDetailPage() {
                 )}
 
                 {displayedExample && (
-                  <InfoBox 
+                  <InfoBox
                     title="Example"
                     onDelete={() => handleDeleteResponse(displayedExample.id)}
                   >
@@ -434,11 +467,13 @@ export default function CardDetailPage() {
                     </div>
                   </InfoBox>
                 )}
-                
+
                 {displayedExplanation && (
-                  <InfoBox 
+                  <InfoBox
                     title="Explanation"
-                    onDelete={() => handleDeleteResponse(displayedExplanation.id)}
+                    onDelete={() =>
+                      handleDeleteResponse(displayedExplanation.id)
+                    }
                   >
                     <div className="text-foreground leading-relaxed whitespace-pre-wrap">
                       {displayedExplanation.content}
@@ -446,12 +481,16 @@ export default function CardDetailPage() {
                   </InfoBox>
                 )}
 
-                {!displayedMnemonic && !displayedExample && !displayedExplanation && (
-                  <div className="flex flex-col items-center mt-48 justify-center h-32 text-secondary-foreground">
-                    <p>No AI-generated content yet.</p>
-                    <p className="mt-2">Use the "Ask AI" button to generate content.</p>
-                  </div>
-                )}
+                {!displayedMnemonic &&
+                  !displayedExample &&
+                  !displayedExplanation && (
+                    <div className="flex flex-col items-center mt-48 justify-center h-32 text-secondary-foreground">
+                      <p>No AI-generated content yet.</p>
+                      <p className="mt-2">
+                        Use the "Ask AI" button to generate content.
+                      </p>
+                    </div>
+                  )}
               </>
             )}
           </div>

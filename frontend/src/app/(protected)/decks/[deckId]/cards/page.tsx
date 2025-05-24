@@ -1,44 +1,52 @@
-"use client"
+"use client";
 
-import { ArrowLeft, Plus, Filter, ArrowUpDown, Search, BookCheck, ChevronDown } from "lucide-react"
-import Link from "next/link"
-import React, { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { CardListItem } from "@/components/ui/card-list-item"
-import { useCards } from "@/hooks/api/use-card"
-import { useParams } from "next/navigation"
-import { useDeck } from "@/hooks/api/use-deck"
-import { motion } from "framer-motion"
-import { UploadModal } from "@/components/ui/upload-modal"
-import { ImportModal } from "@/components/ui/import-modal"
+import {
+  ArrowLeft,
+  Plus,
+  Filter,
+  ArrowUpDown,
+  Search,
+  BookCheck,
+  ChevronDown,
+} from "lucide-react";
+import Link from "next/link";
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { CardListItem } from "@/components/ui/card-list-item";
+import { useCards } from "@/hooks/api/use-card";
+import { useParams } from "next/navigation";
+import { useDeck } from "@/hooks/api/use-deck";
+import { motion } from "framer-motion";
+import { UploadModal } from "@/components/ui/upload-modal";
+import { ImportModal } from "@/components/ui/import-modal";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
 // Define types for the data structures
 interface Card {
-  id: string
-  front_content: string
-  back_content: string
-  created_at: string
-  updated_at: string
-  card_state: string
-  difficulty_level: string
-  success_rate: number
-  times_reviewed: number
-  last_reviewed: string | null
+  id: string;
+  front_content: string;
+  back_content: string;
+  created_at: string;
+  updated_at: string;
+  card_state: string;
+  difficulty_level: string;
+  success_rate: number;
+  times_reviewed: number;
+  last_reviewed: string | null;
   // Add other card properties as needed
-  [key: string]: any // For any additional properties
+  [key: string]: any; // For any additional properties
 }
 
 interface Deck {
-  id: string
-  name: string
-  description: string
+  id: string;
+  name: string;
+  description: string;
   // Add other deck properties as needed
 }
 
@@ -49,16 +57,25 @@ type SortOption = {
   compareFn: (a: Card, b: Card) => number;
 };
 
-export default function CardsPage() {
-  const params = useParams<{ deckId: string }>()
-  const deckId = params.deckId
+// Define filter options type
+type FilterOption = {
+  label: string;
+  value: string;
+};
 
-  const { deck } = useDeck(deckId)
-  const { cards, isLoading, isError, mutate } = useCards(deckId)
+export default function CardsPage() {
+  const params = useParams<{ deckId: string }>();
+  const deckId = params.deckId;
+
+  const { deck } = useDeck(deckId);
+  const { cards, isLoading, isError, mutate } = useCards(deckId);
+  console.log("cards:", cards);
   // Add search state
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState("");
   // Add sort state
-  const [sortOption, setSortOption] = useState<string>("created-desc")
+  const [sortOption, setSortOption] = useState<string>("created-desc");
+  // Add filter state
+  const [filterOption, setFilterOption] = useState<string>("all");
 
   // Define sort options
   const sortOptions: SortOption[] = [
@@ -69,7 +86,7 @@ export default function CardsPage() {
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
         const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
         return dateB - dateA;
-      }
+      },
     },
     {
       label: "Oldest First",
@@ -78,7 +95,7 @@ export default function CardsPage() {
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
         const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
         return dateA - dateB;
-      }
+      },
     },
     {
       label: "Front Content (A-Z)",
@@ -87,7 +104,7 @@ export default function CardsPage() {
         const frontA = a.front_content || "";
         const frontB = b.front_content || "";
         return frontA.localeCompare(frontB);
-      }
+      },
     },
     {
       label: "Front Content (Z-A)",
@@ -96,7 +113,7 @@ export default function CardsPage() {
         const frontA = a.front_content || "";
         const frontB = b.front_content || "";
         return frontB.localeCompare(frontA);
-      }
+      },
     },
     {
       label: "Card State",
@@ -105,7 +122,7 @@ export default function CardsPage() {
         const stateA = a.card_state || "";
         const stateB = b.card_state || "";
         return stateA.localeCompare(stateB);
-      }
+      },
     },
     {
       label: "Difficulty (Easiest First)",
@@ -114,7 +131,7 @@ export default function CardsPage() {
         const difficultyA = a.difficulty_level || "";
         const difficultyB = b.difficulty_level || "";
         return difficultyA.localeCompare(difficultyB);
-      }
+      },
     },
     {
       label: "Success Rate (High to Low)",
@@ -123,7 +140,7 @@ export default function CardsPage() {
         const rateA = a.success_rate || 0;
         const rateB = b.success_rate || 0;
         return rateB - rateA;
-      }
+      },
     },
     {
       label: "Most Reviewed",
@@ -132,7 +149,7 @@ export default function CardsPage() {
         const reviewedA = a.times_reviewed || 0;
         const reviewedB = b.times_reviewed || 0;
         return reviewedB - reviewedA;
-      }
+      },
     },
     {
       label: "Recently Reviewed",
@@ -141,36 +158,59 @@ export default function CardsPage() {
         const dateA = a.last_reviewed ? new Date(a.last_reviewed).getTime() : 0;
         const dateB = b.last_reviewed ? new Date(b.last_reviewed).getTime() : 0;
         return dateB - dateA;
-      }
-    }
+      },
+    },
   ];
 
-  // Filter cards based on search query
+  // Define filter options
+  const filterOptions: FilterOption[] = [
+    { label: "All Cards", value: "all" },
+    { label: "New", value: "new" },
+    { label: "Learning", value: "learning" },
+  ];
+
+  // Filter cards based on search query and card state
   const filteredCards = cards?.filter((card: Card) => {
-    if (!searchQuery.trim()) return true;
-    
-    const query = searchQuery.toLowerCase();
-    return (
-      card.front_content?.toLowerCase().includes(query) ||
-      card.back_content?.toLowerCase().includes(query)
-    );
+    // Apply search filter
+    const matchesSearch =
+      !searchQuery.trim() ||
+      card.front_content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      card.back_content?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Apply card state filter
+    const matchesFilter =
+      filterOption === "all" || card.card_state?.toLowerCase() === filterOption;
+
+    return matchesSearch && matchesFilter;
   });
 
   // Sort the filtered cards
-  const sortedCards = filteredCards ? [...filteredCards].sort(
-    sortOptions.find(option => option.value === sortOption)?.compareFn ||
-    sortOptions[0].compareFn
-  ) : [];
+  const sortedCards = filteredCards
+    ? [...filteredCards].sort(
+        sortOptions.find((option) => option.value === sortOption)?.compareFn ||
+          sortOptions[0].compareFn
+      )
+    : [];
 
   console.log("Cards data:", cards);
   console.log("Filtered cards:", filteredCards);
   console.log("Sorted cards:", sortedCards);
   console.log("Search query:", searchQuery);
   console.log("Sort option:", sortOption);
+  console.log("Filter option:", filterOption);
 
   return (
-    <motion.div className="py-3 px-12" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
-      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
+    <motion.div
+      className="py-3 px-12"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <Link href="/decks">
           <Button
             variant="outline"
@@ -190,7 +230,9 @@ export default function CardsPage() {
       >
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-foreground">{deck?.name}</h1>
-          <p className="text-secondary-foreground font-fragment-mono text-sm">{deck?.description}</p>
+          <p className="text-secondary-foreground font-fragment-mono text-sm">
+            {deck?.description}
+          </p>
         </div>
         <div className="relative w-80 border-0 bg-secondary rounded-lg">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-secondary-foreground" />
@@ -212,17 +254,55 @@ export default function CardsPage() {
           transition={{ duration: 0.4, delay: 0.3 }}
         >
           <div className="flex gap-2">
-            <Link href="/decks/addCard" as={`/decks/addCard`}>
-              <Button className="bg-primary-green hover:border-0 text-muted font-semibold hover:bg-primary-green/90">
-                <Plus className="h-4 w-4 " />
-                Add Note
-              </Button>
-            </Link>
+            {deckId ? (
+              <Link href={`/decks/addCard?deckId=${deckId}`}>
+                <Button className="bg-primary-green hover:border-0 text-muted font-semibold hover:bg-primary-green/90">
+                  <Plus className="h-4 w-4" />
+                  Add Note
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/decks/addCard">
+                <Button className="bg-primary-green hover:border-0 text-muted font-semibold hover:bg-primary-green/90">
+                  <Plus className="h-4 w-4" />
+                  Add Note
+                </Button>
+              </Link>
+            )}
             <UploadModal deckId={deckId} onUploadComplete={() => mutate()} />
-            <ImportModal onImportComplete={() => mutate()} />
+            <ImportModal deckId={deckId} onImportComplete={() => mutate()} />
           </div>
           <div className="flex gap-2">
-            {/* Sort Dropdown - Moved next to Learn Now */}
+            {/* Filter Dropdown - Added next to Sort */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="text-secondary-foreground border-b-1 bg-secondary border-divider hover:text-foreground"
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  {filterOptions.find((option) => option.value === filterOption)
+                    ?.label || "Filter"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {filterOptions.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setFilterOption(option.value)}
+                    className={
+                      filterOption === option.value
+                        ? "bg-secondary font-medium"
+                        : ""
+                    }
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Sort Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -230,7 +310,8 @@ export default function CardsPage() {
                   className="text-secondary-foreground border-b-1 bg-secondary border-divider hover:text-foreground"
                 >
                   <ArrowUpDown className="h-4 w-4 mr-2" />
-                  {sortOptions.find(option => option.value === sortOption)?.label || "Sort"}
+                  {sortOptions.find((option) => option.value === sortOption)
+                    ?.label || "Sort"}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -238,14 +319,18 @@ export default function CardsPage() {
                   <DropdownMenuItem
                     key={option.value}
                     onClick={() => setSortOption(option.value)}
-                    className={sortOption === option.value ? "bg-secondary font-medium" : ""}
+                    className={
+                      sortOption === option.value
+                        ? "bg-secondary font-medium"
+                        : ""
+                    }
                   >
                     {option.label}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             <Link href={`/learn/${deckId}`}>
               <Button className="bg-primary-orange hover:border-0 text-muted font-semibold border-primary-orange-secondary">
                 <BookCheck className="h-4 w-4" />
@@ -267,7 +352,9 @@ export default function CardsPage() {
             <div className="text-center py-8">Loading cards...</div>
           ) : isError ? (
             // Add error state here if needed
-            <div className="text-center py-8 text-red-500">Failed to load cards</div>
+            <div className="text-center py-8 text-red-500">
+              Failed to load cards
+            </div>
           ) : sortedCards && sortedCards.length > 0 ? (
             sortedCards.map((card: Card, index: number) => (
               <motion.div
@@ -276,7 +363,7 @@ export default function CardsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.5 + index * 0.05 }}
               >
-                <CardListItem 
+                <CardListItem
                   key={card.id}
                   deck_id={deckId}
                   front_content={card.front_content}
@@ -294,13 +381,22 @@ export default function CardsPage() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              {cards && cards.length > 0 
-                ? `No cards found matching "${searchQuery}"`
+              {cards && cards.length > 0
+                ? searchQuery && filterOption !== "all"
+                  ? `No cards found matching "${searchQuery}" with filter "${
+                      filterOptions.find((opt) => opt.value === filterOption)
+                        ?.label
+                    }"`
+                  : searchQuery
+                  ? `No cards found matching "${searchQuery}"`
+                  : filterOption !== "all"
+                  ? `No ${filterOption} cards found`
+                  : "No cards found"
                 : "No cards found in this deck. Add your first card to get started!"}
             </motion.div>
           )}
         </motion.div>
       </div>
     </motion.div>
-  )
+  );
 }

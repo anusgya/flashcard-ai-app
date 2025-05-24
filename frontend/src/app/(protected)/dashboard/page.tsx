@@ -1,40 +1,40 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
-import { ActionCard } from "@/components/ui/action-card"
-import { DeckCard } from "@/components/ui/deck-card"
-import ActivityHeatmap from "@/components/activity-heatmap"
-import Link from "next/link"
-import { useRecentDecks } from "@/hooks/api/use-deck" // Import the hook
-import useMe from "@/hooks/api/use-me"
+import { motion } from "framer-motion";
+import { ActionCard } from "@/components/ui/action-card";
+import { DeckCard } from "@/components/ui/deck-card";
+import ActivityHeatmap from "@/components/activity-heatmap";
+import Link from "next/link";
+import { useRecentDecks } from "@/hooks/api/use-deck"; // Import the hook
+import useMe from "@/hooks/api/use-me";
+import { useCards } from "@/hooks/api/use-card";
 
 interface DeckCardProps {
-  id: string
-  name: string
-  progress: number
-  cards_count: number
+  id: string;
+  name: string;
+  learning_cards: number;
+  total_cards: number;
 }
 
 export interface me {
-  username: string;  // min length 3, max length 50
-  email: string;   
-  id: string;        // UUID format from backend
+  username: string; // min length 3, max length 50
+  email: string;
+  id: string; // UUID format from backend
   created_at: string; // ISO date string
   last_login: string | null; // Optional ISO date string
   total_points: number; // Default 0, must be >= 0
-  settings: Record<string, any> | null;  // validated as email on the backend
+  settings: Record<string, any> | null; // validated as email on the backend
 }
 
 // Complete user interface with all properties from the response
 
-
 export default function Dashboard() {
   // Use the hook to fetch recent decks
-  const { recentDecks, isLoading, isError } = useRecentDecks()
-  console.log("recent deck", recentDecks)
-  const { user, isLoading: userLoading, isError: userError } = useMe()
-  console.log("user", user)
+  const { recentDecks, isLoading, isError } = useRecentDecks();
+  console.log("recent deck", recentDecks);
+  const { user, isLoading: userLoading, isError: userError } = useMe();
 
+  console.log("user", user);
 
   // Container animation variants
   const containerVariants = {
@@ -47,7 +47,7 @@ export default function Dashboard() {
         staggerChildren: 0.1,
       },
     },
-  }
+  };
 
   // Child animation variants
   const itemVariants = {
@@ -57,15 +57,27 @@ export default function Dashboard() {
       y: 0,
       transition: { duration: 0.4 },
     },
-  }
+  };
 
   return (
-    <motion.div className="py-16 px-12 space-y-12" variants={containerVariants} initial="hidden" animate="visible">
+    <motion.div
+      className="py-16 px-12 space-y-12"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Header */}
-      <motion.div className="flex justify-between gap-6 items-start" variants={itemVariants}>
+      <motion.div
+        className="flex justify-between gap-6 items-start"
+        variants={itemVariants}
+      >
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold text-foreground">Welcome back, {user?.username}.</h1>
-          <p className="text-secondary-foreground font-fragment-mono text-sm">Ready to continue your journey?</p>
+          <h1 className="text-2xl font-semibold text-foreground">
+            Welcome, {user?.username}.
+          </h1>
+          <p className="text-secondary-foreground font-fragment-mono text-sm">
+            Ready to begin your journey?
+          </p>
         </div>
         <motion.div
           className="flex flex-col items-end gap-2 text-foreground"
@@ -84,13 +96,22 @@ export default function Dashboard() {
             <span>7</span>
           </div>
 
-          <span className="text-secondary-foreground text-sm font-fragment-mono">Daily Streaks</span>
+          <span className="text-secondary-foreground text-sm font-fragment-mono">
+            Daily Streaks
+          </span>
         </motion.div>
       </motion.div>
 
       {/* Action Cards */}
-      <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" variants={itemVariants}>
-        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.2 }}>
+      <motion.div
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        variants={itemVariants}
+      >
+        <motion.div
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ duration: 0.2 }}
+        >
           <Link href={"/decks/addCard"}>
             <ActionCard
               icon={
@@ -105,7 +126,11 @@ export default function Dashboard() {
           </Link>
         </motion.div>
 
-        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.2 }}>
+        <motion.div
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ duration: 0.2 }}
+        >
           <Link href={"./learn"}>
             <ActionCard
               icon={
@@ -120,7 +145,11 @@ export default function Dashboard() {
           </Link>
         </motion.div>
 
-        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.2 }}>
+        <motion.div
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ duration: 0.2 }}
+        >
           <Link href={"./quiz"}>
             <ActionCard
               icon={
@@ -138,7 +167,9 @@ export default function Dashboard() {
 
       {/* Recent Decks */}
       <motion.div className="space-y-4" variants={itemVariants}>
-        <h2 className="text-lg font-semibold text-foreground">Recent Decks</h2>
+        <h2 className="text-lg font-semibold text-foreground">
+          Recently Learned Decks
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {isLoading ? (
             // Loading state with animations
@@ -169,7 +200,7 @@ export default function Dashboard() {
             // Display up to 3 recent decks with staggered animations
             recentDecks
               .slice(0, 3)
-              .map((deck: DeckCardProps, index:number) => (
+              .map((deck: DeckCardProps, index: number) => (
                 <motion.div
                   key={deck.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -180,8 +211,8 @@ export default function Dashboard() {
                   <DeckCard
                     id={deck.id}
                     title={deck.name}
-                    progress={deck.progress || 0}
-                    cardsCount={deck.cards_count || 0}
+                    learningCount={deck.learning_cards || 0}
+                    totalCount={deck.total_cards || 0}
                   />
                 </motion.div>
               ))
@@ -211,5 +242,5 @@ export default function Dashboard() {
         </motion.div>
       </motion.div>
     </motion.div>
-  )
+  );
 }

@@ -99,13 +99,8 @@ async def create_card(
     db.commit()
     db.refresh(new_card)
 
-    # Add tags if provided
     if card_data.tags:
-        # Ensure tags exist and associate them (implementation depends on Tag model/logic)
-        # Example:
-        # existing_tags = db.query(Tag).filter(Tag.id.in_(card_data.tags)).all()
-        # if len(existing_tags) != len(card_data.tags):
-        #     raise HTTPException(status_code=400, detail="One or more tags not found")
+
         for tag_id in card_data.tags:
              # Check if tag exists first (implementation needed)
              tag_association = CardTag(card_id=new_card.id, tag_id=tag_id)
@@ -115,10 +110,9 @@ async def create_card(
 
     return new_card
 
-# <<--- NEW ROUTE START --->>
 @router.post("/generate", response_model=List[schemas.CardResponse], status_code=status.HTTP_201_CREATED)
 async def generate_flashcards(
-    generation_request: schemas.CardGenerationRequest, # Define this schema in schemas/card.py
+    generation_request: schemas.CardGenerationRequest, 
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
@@ -138,18 +132,13 @@ async def generate_flashcards(
             detail="Deck not found or you don't have access to it"
         )
 
-    # 2. Call the AI generation function (ensure this function exists and handles errors)
     try:
-        # You'll need to implement generate_flashcards in e.g., utils/gemini_utils.py
-        # It should return a list of dictionaries, e.g., [{'front': 'Q1', 'back': 'A1'}, ...]
         generated_data = generate_flashcards_from_pdf(
             pdf_source=generation_request.source_text,
             num_flashcards=generation_request.num_flashcards,
             topic=generation_request.topic
-            # Add any other parameters your generation function needs
         )
     except Exception as e:
-        # Log the error e
         print(f"Error generating cards: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -167,7 +156,7 @@ async def generate_flashcards(
     for card_content in generated_data:
         if not card_content.get('front') or not card_content.get('back'):
              print(f"Skipping invalid generated card data: {card_content}")
-             continue # Skip if essential data is missing
+             continue 
 
         new_card = Card(
             deck_id=generation_request.deck_id,
@@ -201,10 +190,7 @@ async def generate_flashcards(
         )
 
     return new_cards
-# <<--- NEW ROUTE END --->>
 
-
-# Update a card
 @router.put("/{card_id}", response_model=schemas.CardResponse)
 async def update_card(
     card_id: UUID,
@@ -361,3 +347,81 @@ async def delete_card_media(
     db.commit()
     
     return None
+
+
+@router.put("/{card_id}/media/{media_id}", response_model=schemas.CardMediaResponse)
+async def update_card_media(
+    card_id: UUID,
+    media_id: UUID,
+    media_file: Optional[UploadFile] = File(None),
+    side: Optional[schemas.MediaSide] = Form(None),
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_active_user)
+):
+    # Find card and verify ownership
+    card = db.query(Card).join(Deck).filter(
+        Card.id == card_id,
+        Deck.user_id == current_user.id
+    ).first()
+    
+    if not card:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Card not found or you don't have access to it"
+        )
+    
+    # Find the media record
+    media = db.query(CardMedia).filter(
+        CardMedia.id == media_id,
+        CardMedia.card_id == card_id
+    ).first()
+    
+    if not media:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Media not found for this card"
+        )
+    
+    # Update side if provided
+    if side:
+        media.side = side.value
+    
+    # Update file if provided
+    if media_file:
+        # Determine media type from content type
+        media_type = schemas.MediaType.IMAGE
+        if "audio" in media_file.content_type:
+            media_type = schemas.MediaType.AUDIO
+        
+        # Save file - in production, use cloud storage
+        upload_dir = os.path.join("media", str(current_user.id), str(card.deck_id))
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        file_ext = os.path.splitext(media_file.filename)[1]
+        filename = f"{card_id}_{datetime.utcnow().timestamp()}{file_ext}"
+        file_path = os.path.join(upload_dir, filename)
+        
+        # Save the new file
+        content = await media_file.read()
+        with open(file_path, "wb") as f:
+            f.write(content)
+        
+        # Delete old file if it exists
+        if os.path.exists(media.file_path):
+            try:
+                os.remove(media.file_path)
+            except Exception as e:
+                print(f"Error removing old file: {e}")
+        
+        # Update media record
+        media.media_type = media_type.value
+        media.file_path = file_path
+        media.original_filename = media_file.filename
+        media.mime_type = media_file.content_type
+        media.file_size = len(content)
+    
+    media.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(media)
+    
+    return media

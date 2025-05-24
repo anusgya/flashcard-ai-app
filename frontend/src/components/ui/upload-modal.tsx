@@ -165,7 +165,7 @@ export function UploadModal({
           Generate
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] bg-muted border-divider px-10 py-6">
+      <DialogContent className="sm:max-w-[600px] bg-muted border-border px-10 py-6">
         <DialogHeader>
           <DialogTitle className="text-lg font-inter">Upload PDF</DialogTitle>
           <DialogDescription className="text-secondary-foreground font-fragment-mono text-sm">
@@ -175,8 +175,8 @@ export function UploadModal({
         <div
           className={`mt-4 p-8 border-2 border-dashed rounded-lg transition-colors ${
             isDragging
-              ? "border-primary-blue bg-primary-blue/10"
-              : "border-secondary-foreground"
+              ? "border-secondary-foreground bg-primary-blue/10"
+              : "border-border"
           }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -202,7 +202,7 @@ export function UploadModal({
             <Button
               type="button"
               variant="outline"
-              className="border-divider"
+              className="border-border border-b-1 "
               onClick={() => fileInputRef.current?.click()}
             >
               Choose File
@@ -215,7 +215,7 @@ export function UploadModal({
             <Label htmlFor="topic">Topic (Optional)</Label>
             <Input 
               id="topic" 
-              placeholder="E.g., Biology, History, Math..." 
+              placeholder="E.g. History" 
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               className="border-divider"

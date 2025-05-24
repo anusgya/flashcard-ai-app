@@ -235,8 +235,6 @@ def list_quiz_sessions(
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
-# -------- Enhanced Quiz Generation Endpoints --------
-
 @router.get("/questions/{card_id}", response_model=QuizQuestionResponse)
 def get_card_question(
     card_id: str,
@@ -504,6 +502,8 @@ def start_quiz(
                         topic=deck.name,
                         num_options=3
                     )
+
+                    print(f"Generated quiz data: {quiz_data}")  # Debugging line
                     
                     # The options should include the correct answer and the generated incorrect options
                     all_options = [condensed_answer] + quiz_data["options"][:3]

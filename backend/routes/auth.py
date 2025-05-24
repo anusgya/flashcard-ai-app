@@ -11,7 +11,7 @@ from auth import (
     create_access_token,
     ACCESS_TOKEN_EXPIRE_MINUTES,
     get_current_user,
-    get_current_active_user
+    get_current_active_user,
 )
 
 router = APIRouter(
@@ -90,5 +90,4 @@ def register_user(
 
 @router.get("/me", response_model=schemas.UserResponse)
 def read_users_me(current_user: User = Depends(get_current_active_user)):
-    print(current_user)  # Add this line for debugging purposes
     return current_user

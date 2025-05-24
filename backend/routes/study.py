@@ -83,8 +83,7 @@ def get_recent_decks(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):
-    # Subquery to get the most recent study session for each deck
-    # Using start_time as the indicator for when the deck was last accessed
+
     subquery = db.query(
         models.StudySession.deck_id,
         func.max(models.StudySession.start_time).label("latest_start_time")
@@ -102,6 +101,18 @@ def get_recent_decks(
     ).order_by(
         subquery.c.latest_start_time.desc()
     ).limit(3).all()
+    
+    for deck in recent_decks:
+        # Get total cards count
+        deck.total_cards = db.query(func.count(models.Card.id)).filter(
+            models.Card.deck_id == deck.id
+        ).scalar() or 0
+        
+        # Get learning cards count
+        deck.learning_cards = db.query(func.count(models.Card.id)).filter(
+            models.Card.deck_id == deck.id,
+            models.Card.card_state == CardState.LEARNING
+        ).scalar() or 0
     
     return recent_decks
 
@@ -389,10 +400,13 @@ def get_next_card(
     if not next_card:
         raise HTTPException(status_code=404, detail="No cards due for review or new cards available")
 
-
     is_due = False
     if next_card.next_review is not None:
+        # Fix timezone awareness issue by ensuring both datetimes have timezone info
+        if next_card.next_review.tzinfo is None:
+            next_card.next_review = next_card.next_review.replace(tzinfo=UTC)
         is_due = next_card.next_review <= now
+        
     # ✅ Return the next card
     return schemas.NextCardResponse(
         card_id=next_card.id,
@@ -554,7 +568,6 @@ def update_all_card_states(
     )
 
 
-# SM-2 algorithm calculation for models.py
 
 @staticmethod
 def calculate_next_review(response_quality, current_ease, current_interval, repetition_number):

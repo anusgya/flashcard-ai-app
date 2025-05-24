@@ -126,7 +126,7 @@ export function DeckListItem({
             </div>
             <div className="flex flex-col items-center gap-1">
               <span className="text-primary-green text-md">{learnCount}</span>
-              <span className="text-secondary-foreground text-xs">learn</span>
+              <span className="text-secondary-foreground text-xs">learning</span>
             </div>
           </div>
 

@@ -79,7 +79,7 @@ export function AvatarSelection() {
             <RadioGroupItem value={avatar.id} id={`avatar-${avatar.id}`} className="peer sr-only" />
             <Label
               htmlFor={`avatar-${avatar.id}`}
-              className="flex flex-col items-center gap-2 rounded-full border-2  border-muted p-4 hover:border-primary cursor-pointer peer-data-[state=checked]:border-primary-green"
+              className="flex flex-col items-center gap-2 rounded-full border-2  border-muted p-2 hover:border-primary cursor-pointer peer-data-[state=checked]:border-primary-green"
             >
               <Avatar className="h-20 w-20">
                 <AvatarImage

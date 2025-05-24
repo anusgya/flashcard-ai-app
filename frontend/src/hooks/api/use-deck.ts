@@ -89,23 +89,30 @@ export async function cloneDeck(deckId: string) {
 
 // Import cards from CSV
 export async function importCardsFromCSV(deckId: string, file: File) {
-  const token = localStorage.getItem('token');
-  const baseUrl = 'http://localhost:8000';
   const formData = new FormData();
   formData.append('file', file);
+
+  console.log('Attempting to import to deck ID:', deckId);
+
+
   
-  const response = await fetch(`${baseUrl}/api/decks/${deckId}/import/csv`, {
+  return fetchWithAuth(`/api/decks/${deckId}/import/csv`, {
     method: 'POST',
-    headers: {
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-    },
-    credentials: 'include',
     body: formData,
+    // Don't set Content-Type header when using FormData, browser will set it with boundary
   });
+}
+
+// Import cards from text file
+export async function importCardsFromText(deckId: string, file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  console.log('Attempting to import text file to deck ID:', deckId);
   
-  if (!response.ok) {
-    throw new Error('Failed to import cards from CSV');
-  }
-  
-  return response.json();
+  return fetchWithAuth(`/api/decks/${deckId}/import/text`, {
+    method: 'POST',
+    body: formData,
+    // Don't set Content-Type header when using FormData, browser will set it with boundary
+  });
 }
