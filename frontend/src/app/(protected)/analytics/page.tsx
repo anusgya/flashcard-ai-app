@@ -59,6 +59,14 @@ const AnalyticsDashboard = () => {
   });
 
   useEffect(() => {
+    // Reset progress values when time range changes
+    setProgressValues({
+      effectiveness: 0,
+      daily: 0,
+      weekly: 0,
+      monthly: 0,
+    });
+
     if (analytics) {
       // Animate progress bars
       const timer = setTimeout(() => {
@@ -71,7 +79,7 @@ const AnalyticsDashboard = () => {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [analytics]);
+  }, [analytics, timeRange]);
 
   if (isLoading) {
     return (
@@ -174,6 +182,40 @@ const AnalyticsDashboard = () => {
             <p className="text-secondary-foreground text-sm font-fragment-mono mt-1">
               Track your progress and optimize your learning journey
             </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={timeRange === TimeRange.TODAY ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTimeRange(TimeRange.TODAY)}
+              className="min-w-[80px]"
+            >
+              Day
+            </Button>
+            <Button
+              variant={timeRange === TimeRange.WEEK ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTimeRange(TimeRange.WEEK)}
+              className="min-w-[80px]"
+            >
+              Week
+            </Button>
+            <Button
+              variant={timeRange === TimeRange.MONTH ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTimeRange(TimeRange.MONTH)}
+              className="min-w-[80px]"
+            >
+              Month
+            </Button>
+            <Button
+              variant={timeRange === TimeRange.ALL ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTimeRange(TimeRange.ALL)}
+              className="min-w-[80px]"
+            >
+              All
+            </Button>
           </div>
         </div>
 
@@ -329,14 +371,13 @@ const AnalyticsDashboard = () => {
                       <CardTitle>Quiz vs. Study Performance</CardTitle>
                     </div>
                     <Badge variant="outline" className="bg-accent/50">
-                      Last{" "}
                       {timeRange === TimeRange.TODAY
-                        ? "24 hours"
+                        ? "Last 24 hours"
                         : timeRange === TimeRange.WEEK
-                        ? "7 days"
+                        ? "Last 7 days"
                         : timeRange === TimeRange.MONTH
-                        ? "30 days"
-                        : "all time"}
+                        ? "Last 30 days"
+                        : "All time"}
                     </Badge>
                   </div>
                   <CardDescription>
@@ -345,114 +386,128 @@ const AnalyticsDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart
-                        data={quizVsStudyData}
-                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                      >
-                        <defs>
-                          <linearGradient
-                            id="colorQuiz"
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                          >
-                            <stop
-                              offset="5%"
-                              stopColor="#FF9800"
-                              stopOpacity={0.8}
-                            />
-                            <stop
-                              offset="95%"
-                              stopColor="#FF9800"
-                              stopOpacity={0}
-                            />
-                          </linearGradient>
-                          <linearGradient
-                            id="colorStudy"
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                          >
-                            <stop
-                              offset="5%"
-                              stopColor="#2196F3"
-                              stopOpacity={0.8}
-                            />
-                            <stop
-                              offset="95%"
-                              stopColor="#2196F3"
-                              stopOpacity={0}
-                            />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          stroke="var(--border)"
-                          vertical={false}
-                        />
-                        <XAxis
-                          dataKey="date"
-                          stroke="var(--secondary-foreground)"
-                          tick={{ fill: "var(--secondary-foreground)" }}
-                          axisLine={{ stroke: "var(--border)" }}
-                          tickLine={{ stroke: "var(--border)" }}
-                        />
-                        <YAxis
-                          domain={[0, 100]}
-                          stroke="var(--secondary-foreground)"
-                          tick={{ fill: "var(--secondary-foreground)" }}
-                          axisLine={{ stroke: "var(--border)" }}
-                          tickLine={{ stroke: "var(--border)" }}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "var(--card)",
-                            borderColor: "var(--border)",
-                            color: "var(--foreground)",
-                            borderRadius: "0.5rem",
-                            boxShadow:
-                              "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                          }}
-                          itemStyle={{ color: "var(--foreground)" }}
-                          labelStyle={{
-                            color: "var(--foreground)",
-                            fontWeight: "bold",
-                            marginBottom: "0.5rem",
-                          }}
-                        />
-                        <Legend
-                          wrapperStyle={{ paddingTop: "1rem" }}
-                          formatter={(value) => (
-                            <span style={{ color: "var(--foreground)" }}>
-                              {value}
-                            </span>
-                          )}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="quizAccuracy"
-                          name="Quiz Accuracy"
-                          stroke="#FF9800"
-                          strokeWidth={3}
-                          fillOpacity={1}
-                          fill="url(#colorQuiz)"
-                          activeDot={{ r: 8, strokeWidth: 0 }}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="studyAccuracy"
-                          name="Study Accuracy"
-                          stroke="#2196F3"
-                          strokeWidth={3}
-                          fillOpacity={1}
-                          fill="url(#colorStudy)"
-                          activeDot={{ r: 8, strokeWidth: 0 }}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                    {isLoading ? (
+                      <div className="h-full flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="relative w-12 h-12">
+                            <div className="absolute top-0 left-0 w-full h-full border-4 border-primary-blue/20 rounded-full"></div>
+                            <div className="absolute top-0 left-0 w-full h-full border-4 border-transparent border-t-primary-blue rounded-full animate-spin"></div>
+                          </div>
+                          <p className="text-secondary-foreground text-sm">
+                            Loading data...
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart
+                          data={quizVsStudyData}
+                          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                        >
+                          <defs>
+                            <linearGradient
+                              id="colorQuiz"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="5%"
+                                stopColor="#FF9800"
+                                stopOpacity={0.8}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor="#FF9800"
+                                stopOpacity={0}
+                              />
+                            </linearGradient>
+                            <linearGradient
+                              id="colorStudy"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="5%"
+                                stopColor="#2196F3"
+                                stopOpacity={0.8}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor="#2196F3"
+                                stopOpacity={0}
+                              />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="var(--border)"
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="date"
+                            stroke="var(--secondary-foreground)"
+                            tick={{ fill: "var(--secondary-foreground)" }}
+                            axisLine={{ stroke: "var(--border)" }}
+                            tickLine={{ stroke: "var(--border)" }}
+                          />
+                          <YAxis
+                            domain={[0, 100]}
+                            stroke="var(--secondary-foreground)"
+                            tick={{ fill: "var(--secondary-foreground)" }}
+                            axisLine={{ stroke: "var(--border)" }}
+                            tickLine={{ stroke: "var(--border)" }}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "var(--card)",
+                              borderColor: "var(--border)",
+                              color: "var(--foreground)",
+                              borderRadius: "0.5rem",
+                              boxShadow:
+                                "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                            }}
+                            itemStyle={{ color: "var(--foreground)" }}
+                            labelStyle={{
+                              color: "var(--foreground)",
+                              fontWeight: "bold",
+                              marginBottom: "0.5rem",
+                            }}
+                          />
+                          <Legend
+                            wrapperStyle={{ paddingTop: "1rem" }}
+                            formatter={(value) => (
+                              <span style={{ color: "var(--foreground)" }}>
+                                {value}
+                              </span>
+                            )}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="quizAccuracy"
+                            name="Quiz Accuracy"
+                            stroke="#FF9800"
+                            strokeWidth={3}
+                            fillOpacity={1}
+                            fill="url(#colorQuiz)"
+                            activeDot={{ r: 8, strokeWidth: 0 }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="studyAccuracy"
+                            name="Study Accuracy"
+                            stroke="#2196F3"
+                            strokeWidth={3}
+                            fillOpacity={1}
+                            fill="url(#colorStudy)"
+                            activeDot={{ r: 8, strokeWidth: 0 }}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -553,134 +608,148 @@ const AnalyticsDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={studyTrendData}
-                        margin={{ top: 10, right: 30, left: 0, bottom: 5 }}
-                      >
-                        <defs>
-                          <linearGradient
-                            id="colorAccuracy"
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                          >
-                            <stop
-                              offset="5%"
-                              stopColor="#2196F3"
-                              stopOpacity={0.8}
-                            />
-                            <stop
-                              offset="95%"
-                              stopColor="#2196F3"
-                              stopOpacity={0}
-                            />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          stroke="var(--border)"
-                          vertical={false}
-                        />
-                        <XAxis
-                          dataKey="interval"
-                          stroke="var(--secondary-foreground)"
-                          tick={{ fill: "var(--secondary-foreground)" }}
-                          axisLine={{ stroke: "var(--border)" }}
-                          tickLine={{ stroke: "var(--border)" }}
-                        />
-                        <YAxis
-                          stroke="var(--secondary-foreground)"
-                          tick={{ fill: "var(--secondary-foreground)" }}
-                          axisLine={{ stroke: "var(--border)" }}
-                          tickLine={{ stroke: "var(--border)" }}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "var(--card)",
-                            borderColor: "var(--border)",
-                            color: "var(--foreground)",
-                            borderRadius: "0.5rem",
-                            boxShadow:
-                              "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                          }}
-                          itemStyle={{ color: "var(--foreground)" }}
-                          labelStyle={{
-                            color: "var(--foreground)",
-                            fontWeight: "bold",
-                            marginBottom: "0.5rem",
-                          }}
-                        />
-                        <Legend
-                          wrapperStyle={{ paddingTop: "1rem" }}
-                          formatter={(value) => (
-                            <span style={{ color: "var(--foreground)" }}>
-                              {value}
-                            </span>
-                          )}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="accuracy"
-                          name="Accuracy %"
-                          stroke="#2196F3"
-                          strokeWidth={3}
-                          dot={{
-                            stroke: "#2196F3",
-                            strokeWidth: 2,
-                            r: 4,
-                            fill: "var(--card)",
-                          }}
-                          activeDot={{
-                            r: 6,
-                            stroke: "#2196F3",
-                            strokeWidth: 2,
-                            fill: "#2196F3",
-                          }}
-                          fillOpacity={1}
-                          fill="url(#colorAccuracy)"
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="cardsStudied"
-                          name="Cards Studied"
-                          stroke="#FF9800"
-                          strokeWidth={2}
-                          dot={{
-                            stroke: "#FF9800",
-                            strokeWidth: 2,
-                            r: 4,
-                            fill: "var(--card)",
-                          }}
-                          activeDot={{
-                            r: 6,
-                            stroke: "#FF9800",
-                            strokeWidth: 2,
-                            fill: "#FF9800",
-                          }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="timeSpent"
-                          name="Time (min)"
-                          stroke="#4CAF50"
-                          strokeWidth={2}
-                          dot={{
-                            stroke: "#4CAF50",
-                            strokeWidth: 2,
-                            r: 4,
-                            fill: "var(--card)",
-                          }}
-                          activeDot={{
-                            r: 6,
-                            stroke: "#4CAF50",
-                            strokeWidth: 2,
-                            fill: "#4CAF50",
-                          }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    {isLoading ? (
+                      <div className="h-full flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="relative w-12 h-12">
+                            <div className="absolute top-0 left-0 w-full h-full border-4 border-primary-blue/20 rounded-full"></div>
+                            <div className="absolute top-0 left-0 w-full h-full border-4 border-transparent border-t-primary-blue rounded-full animate-spin"></div>
+                          </div>
+                          <p className="text-secondary-foreground text-sm">
+                            Loading data...
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={studyTrendData}
+                          margin={{ top: 10, right: 30, left: 0, bottom: 5 }}
+                        >
+                          <defs>
+                            <linearGradient
+                              id="colorAccuracy"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="5%"
+                                stopColor="#2196F3"
+                                stopOpacity={0.8}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor="#2196F3"
+                                stopOpacity={0}
+                              />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="var(--border)"
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="interval"
+                            stroke="var(--secondary-foreground)"
+                            tick={{ fill: "var(--secondary-foreground)" }}
+                            axisLine={{ stroke: "var(--border)" }}
+                            tickLine={{ stroke: "var(--border)" }}
+                          />
+                          <YAxis
+                            stroke="var(--secondary-foreground)"
+                            tick={{ fill: "var(--secondary-foreground)" }}
+                            axisLine={{ stroke: "var(--border)" }}
+                            tickLine={{ stroke: "var(--border)" }}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "var(--card)",
+                              borderColor: "var(--border)",
+                              color: "var(--foreground)",
+                              borderRadius: "0.5rem",
+                              boxShadow:
+                                "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                            }}
+                            itemStyle={{ color: "var(--foreground)" }}
+                            labelStyle={{
+                              color: "var(--foreground)",
+                              fontWeight: "bold",
+                              marginBottom: "0.5rem",
+                            }}
+                          />
+                          <Legend
+                            wrapperStyle={{ paddingTop: "1rem" }}
+                            formatter={(value) => (
+                              <span style={{ color: "var(--foreground)" }}>
+                                {value}
+                              </span>
+                            )}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="accuracy"
+                            name="Accuracy %"
+                            stroke="#2196F3"
+                            strokeWidth={3}
+                            dot={{
+                              stroke: "#2196F3",
+                              strokeWidth: 2,
+                              r: 4,
+                              fill: "var(--card)",
+                            }}
+                            activeDot={{
+                              r: 6,
+                              stroke: "#2196F3",
+                              strokeWidth: 2,
+                              fill: "#2196F3",
+                            }}
+                            fillOpacity={1}
+                            fill="url(#colorAccuracy)"
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="cardsStudied"
+                            name="Cards Studied"
+                            stroke="#FF9800"
+                            strokeWidth={2}
+                            dot={{
+                              stroke: "#FF9800",
+                              strokeWidth: 2,
+                              r: 4,
+                              fill: "var(--card)",
+                            }}
+                            activeDot={{
+                              r: 6,
+                              stroke: "#FF9800",
+                              strokeWidth: 2,
+                              fill: "#FF9800",
+                            }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="timeSpent"
+                            name="Time (min)"
+                            stroke="#4CAF50"
+                            strokeWidth={2}
+                            dot={{
+                              stroke: "#4CAF50",
+                              strokeWidth: 2,
+                              r: 4,
+                              fill: "var(--card)",
+                            }}
+                            activeDot={{
+                              r: 6,
+                              stroke: "#4CAF50",
+                              strokeWidth: 2,
+                              fill: "#4CAF50",
+                            }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -751,130 +820,6 @@ const AnalyticsDashboard = () => {
                 </CardContent>
               </Card>
             </motion.div>
-
-            {/* Session Frequency */}
-            {/* <motion.div
-              className="lg:col-span-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.7 }}
-            >
-              <Card className="border-divider hover:shadow-md transition-all duration-300">
-                <CardHeader>
-                  <CardTitle>Session Frequency</CardTitle>
-                  <CardDescription>How often you study across different time periods</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-secondary-foreground">Daily</span>
-                      <span className="text-sm font-medium text-foreground">
-                        {sessionFrequency?.daily.count} sessions
-                      </span>
-                    </div>
-                    <Progress value={progressValues.daily} className="h-3" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-secondary-foreground">Weekly</span>
-                      <span className="text-sm font-medium text-foreground">
-                        {sessionFrequency?.weekly.count} sessions
-                      </span>
-                    </div>
-                    <Progress value={progressValues.weekly} className="h-3" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-secondary-foreground">Monthly</span>
-                      <span className="text-sm font-medium text-foreground">
-                        {sessionFrequency?.monthly.count} sessions
-                      </span>
-                    </div>
-                    <Progress value={progressValues.monthly} className="h-3" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 pt-4">
-                    <Card className="bg-accent/50 p-4">
-                      <p className="text-xs font-medium text-secondary-foreground mb-1">Avg. Session</p>
-                      <p className="text-2xl font-bold text-foreground">
-                        {averageSessionDuration} <span className="text-sm font-normal">min</span>
-                      </p>
-                    </Card>
-                    <Card className="bg-accent/50 p-4">
-                      <p className="text-xs font-medium text-secondary-foreground mb-1">Total Time</p>
-                      <p className="text-2xl font-bold text-foreground">
-                        {totalStudyTime} <span className="text-sm font-normal">hrs</span>
-                      </p>
-                    </Card>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div> */}
-
-            {/* Streak Calendar */}
-            {/* <motion.div
-              className="lg:col-span-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.8 }}
-            >
-              <Card className="border-divider hover:shadow-md transition-all duration-300">
-                <CardHeader>
-                  <CardTitle>Study Streak Calendar</CardTitle>
-                  <CardDescription>Your daily learning consistency</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-7 gap-3 mb-6">
-                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                      <div key={day} className="text-xs font-medium text-secondary-foreground text-center">
-                        {day}
-                      </div>
-                    ))}
-                    {streakData.map((day, index) => (
-                      <motion.div
-                        key={index}
-                        className="flex flex-col items-center"
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.3, delay: index * 0.01 }}
-                      >
-                        <div
-                          className="w-10 h-10 rounded-md flex items-center justify-center text-foreground transition-all duration-200 hover:scale-110 cursor-pointer relative group"
-                          style={{
-                            backgroundColor: getStreakColor(day.value),
-                            boxShadow: day.value ? "0 0 8px rgba(76, 175, 80, 0.3)" : "none",
-                          }}
-                        >
-                          {day.value ? "✓" : ""}
-                          {day.value > 0 && (
-                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-card px-2 py-1 rounded text-xs border border-divider opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-                              {day.date}: {day.value * 30} min
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                  <Card className="bg-accent/50 p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-secondary-foreground mb-1">Current Streak</p>
-                        <p className="text-2xl font-bold text-foreground">
-                          {currentStreak} <span className="text-sm font-normal">days</span>
-                        </p>
-                      </div>
-                      <div className="h-10 w-px bg-divider mx-4"></div>
-                      <div>
-                        <p className="text-sm text-secondary-foreground mb-1">Longest Streak</p>
-                        <p className="text-2xl font-bold text-foreground">
-                          {longestStreak} <span className="text-sm font-normal">days</span>
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
-                </CardContent>
-              </Card>
-            </motion.div> */}
           </div>
         </div>
       </div>

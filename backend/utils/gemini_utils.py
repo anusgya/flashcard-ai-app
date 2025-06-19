@@ -621,3 +621,102 @@ def generate_flashcards_from_pdf(pdf_source: str, num_flashcards: int, topic: Op
                 print(f"Temporary file {temp_pdf_path} deleted.")
             except OSError as e:
                 print(f"Error deleting temporary file {temp_pdf_path}: {e}")
+
+def generate_flashcards_from_youtube(youtube_url: str, num_flashcards: int, topic: Optional[str] = None) -> List[Dict[str, str]]:
+    """
+    Generate flashcards from a YouTube video using Gemini API.
+    
+    Args:
+        youtube_url: URL of the YouTube video
+        num_flashcards: Number of flashcards to generate
+        topic: Optional topic to focus on
+        
+    Returns:
+        List of dictionaries containing front and back content for each flashcard
+    """
+    try:
+        topic_instruction = f"Focus on the topic: {topic}." if topic else "Identify the main topics and concepts."
+        prompt = f"""
+        Analyze the content of the provided YouTube video.
+        {topic_instruction}
+
+        Generate exactly {num_flashcards} flashcards based on the key information in the video.
+        Each flashcard should have a 'Front' (a question, term, or concept) and a 'Back' (the answer or definition).
+
+        Format each flashcard clearly like this, using '---' as a separator between cards:
+
+        Front: [Front text of card 1]
+        Back: [Back text of card 1]
+        ---
+        Front: [Front text of card 2]
+        Back: [Back text of card 2]
+        ---
+        (continue for all {num_flashcards} cards)
+
+        Ensure the Front and Back text are concise and suitable for flashcards.
+        Do not include any extra explanations or text outside this format.
+        
+        IMPORTANT: Make sure the Front contains ONLY the question/term, and the Back contains ONLY the answer/definition.
+        DO NOT include the answer in the Front.
+        """
+
+        print(f"Generating {num_flashcards} flashcards from YouTube video...")
+        
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=[
+                types.Part(
+                    file_data=types.FileData(file_uri=youtube_url)
+                ),
+                prompt
+            ]
+        )
+        print("Flashcard generation response received.")
+
+        raw_text = response.text
+        card_blocks = raw_text.strip().split('---')
+        generated_flashcards = []
+
+        for block in card_blocks:
+            if not block.strip():
+                continue
+
+            front_match = re.search(r"Front:\s*(.*?)(?=\s*Back:|\Z)", block, re.IGNORECASE | re.DOTALL)
+            back_match = re.search(r"Back:\s*(.*)", block, re.IGNORECASE | re.DOTALL)
+
+            if front_match and back_match:
+                # Extract content
+                front_text = front_match.group(1).strip()
+                back_text = back_match.group(1).strip()
+                
+                if "Back:" in front_text:
+                    front_parts = front_text.split("Back:", 1)
+                    front_text = front_parts[0].strip()
+                
+                if "Front:" in back_text:
+                    back_parts = back_text.split("Front:", 1)
+                    back_text = back_parts[0].strip()
+                
+                front_text = re.sub(r'^Front:\s*', '', front_text).strip()
+                back_text = re.sub(r'^Back:\s*', '', back_text).strip()
+                
+                if back_text in front_text:
+                    front_text = front_text.replace(back_text, '').strip()
+                    front_text = re.sub(r'[:\s]+$', '', front_text)
+                    if any(front_text.lower().startswith(q) for q in ['what', 'why', 'how', 'when', 'where', 'who', 'which']) and not front_text.endswith('?'):
+                        front_text += '?'
+
+                if front_text and back_text:  # Ensure both are non-empty
+                    generated_flashcards.append({"front": front_text, "back": back_text})
+                    print(f"Parsed flashcard: Front: {front_text[:30]}... Back: {back_text[:30]}...")
+            else:
+                print(f"Warning: Could not parse flashcard block:\n{block.strip()}")
+
+        generated_flashcards = generated_flashcards[:num_flashcards]
+        print(f"Successfully parsed {len(generated_flashcards)} flashcards.")
+
+        return generated_flashcards
+
+    except Exception as e:
+        print(f"An error occurred during flashcard generation from YouTube video: {e}")
+        raise  # Re-raise the exception

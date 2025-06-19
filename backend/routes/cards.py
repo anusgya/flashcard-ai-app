@@ -10,7 +10,7 @@ import schemas
 from models import Card, CardMedia, CardTag, Deck, User # Added User for current_user type hint
 from auth import get_current_active_user
 # Assume you have a utility function for generation
-from utils.gemini_utils import generate_flashcards_from_pdf
+from utils.gemini_utils import generate_flashcards_from_pdf, generate_flashcards_from_youtube
 
 router = APIRouter(
     prefix="/api/cards",
@@ -133,11 +133,24 @@ async def generate_flashcards(
         )
 
     try:
-        generated_data = generate_flashcards_from_pdf(
-            pdf_source=generation_request.source_text,
-            num_flashcards=generation_request.num_flashcards,
-            topic=generation_request.topic
-        )
+        # Generate cards based on source type
+        if generation_request.source_type.lower() == 'pdf':
+            generated_data = generate_flashcards_from_pdf(
+                pdf_source=generation_request.source_text,
+                num_flashcards=generation_request.num_flashcards,
+                topic=generation_request.topic
+            )
+        elif generation_request.source_type.lower() == 'youtube':
+            generated_data = generate_flashcards_from_youtube(
+                youtube_url=generation_request.source_text,
+                num_flashcards=generation_request.num_flashcards,
+                topic=generation_request.topic
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported source type: {generation_request.source_type}"
+            )
     except Exception as e:
         print(f"Error generating cards: {e}")
         raise HTTPException(
@@ -162,10 +175,9 @@ async def generate_flashcards(
             deck_id=generation_request.deck_id,
             front_content=card_content['front'],
             back_content=card_content['back'],
-            source="generated", # Indicate the source
+            source=f"generated_{generation_request.source_type}", # Indicate the source type
             difficulty_level=schemas.DifficultyLevel.NEW,
             card_state=schemas.CardState.NEW
-            # Add other default fields as necessary
         )
         db.add(new_card)
         new_cards.append(new_card)
@@ -182,7 +194,6 @@ async def generate_flashcards(
             db.refresh(card) # Refresh each card to get its ID and other DB defaults
     except Exception as e:
         db.rollback()
-        # Log the error e
         print(f"Error committing generated cards: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

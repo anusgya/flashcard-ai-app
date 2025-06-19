@@ -239,80 +239,29 @@ async def import_cards_from_csv(
     try:
         content = await file.read()
         csv_content = content.decode('utf-8')
+        csv_reader = csv.reader(io.StringIO(csv_content))
         
-        # Use DictReader to read columns by name
-        csv_file = io.StringIO(csv_content)
-        csv_reader = csv.DictReader(csv_file)
+        # Skip header
+        next(csv_reader, None)
         
-        # Get headers
-        headers = csv_reader.fieldnames if csv_reader.fieldnames else []
-        
-        if not headers:
-            raise ValueError("CSV file has no headers")
-        
-        # Define possible column names for front and back content
-        front_column_patterns = [
-            'front', 'front_content', 'frontcontent', 'frontContent', 
-            'question', 'prompt', 'term', 'front_side', 'frontside', 'frontSide'
-        ]
-        
-        back_column_patterns = [
-            'back', 'back_content', 'backcontent', 'backContent', 
-            'answer', 'definition', 'explanation', 'back_side', 'backside', 'backSide'
-        ]
-        
-        # Find the matching column names (case-insensitive)
-        front_column = None
-        back_column = None
-        
-        for header in headers:
-            header_lower = header.lower()
-            
-            # Check for front content column
-            if not front_column:
-                for pattern in front_column_patterns:
-                    if pattern == header_lower or pattern.replace('_', '') == header_lower.replace('_', ''):
-                        front_column = header
-                        break
-            
-            # Check for back content column
-            if not back_column:
-                for pattern in back_column_patterns:
-                    if pattern == header_lower or pattern.replace('_', '') == header_lower.replace('_', ''):
-                        back_column = header
-                        break
-        
-        # If we couldn't find the columns, try using the first two columns
-        if not front_column and not back_column and len(headers) >= 2:
-            front_column = headers[0]
-            back_column = headers[1]
-        
-        if not front_column or not back_column:
-            raise ValueError(
-                "Could not identify front and back content columns. "
-                "Please use headers like 'front_content' and 'back_content', or 'question' and 'answer'."
-            )
-        
-        # Process rows with identified columns
+        # Process rows (assuming front_content, back_content format)
         cards_added = 0
         for row in csv_reader:
-            front_content = row.get(front_column, '').strip()
-            back_content = row.get(back_column, '').strip()
-            
-            if front_content and back_content:
-                new_card = Card(
-                    deck_id=deck_id,
-                    front_content=front_content,
-                    back_content=back_content,
-                    source="csv_import",
-                    difficulty_level="new",
-                    card_state="new"
-                )
-                db.add(new_card)
-                cards_added += 1
-        
-        if cards_added == 0:
-            raise ValueError("No valid cards found in the CSV file")
+            if len(row) >= 2:
+                front_content = row[0].strip()
+                back_content = row[1].strip()
+                
+                if front_content and back_content:
+                    new_card = Card(
+                        deck_id=deck_id,
+                        front_content=front_content,
+                        back_content=back_content,
+                        source="csv_import",
+                        difficulty_level="new",
+                        card_state="new"
+                    )
+                    db.add(new_card)
+                    cards_added += 1
         
         db.commit()
         db.refresh(deck)
@@ -323,21 +272,15 @@ async def import_cards_from_csv(
         # Format response
         deck_dict = schemas.DeckResponse.from_orm(deck).dict()
         deck_dict["card_count"] = card_count
-        deck_dict["import_details"] = {
-            "cards_added": cards_added,
-            "front_column": front_column,
-            "back_column": back_column
-        }
         
         return schemas.DeckResponse(**deck_dict)
         
     except Exception as e:
-        # Rollback in case of error
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Error processing CSV: {str(e)}"
         )
+
 # Clone a public deck
 @router.post("/{deck_id}/clone", response_model=schemas.DeckResponse, status_code=status.HTTP_201_CREATED)
 async def clone_deck(
@@ -393,142 +336,3 @@ async def clone_deck(
     deck_dict["card_count"] = card_count
     
     return schemas.DeckResponse(**deck_dict)
-
-@router.post("/{deck_id}/import/text", response_model=schemas.DeckResponse)
-async def import_cards_from_text(
-    deck_id: UUID,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_active_user)
-):
-    # Verify deck belongs to user
-    deck = db.query(Deck).filter(
-        Deck.id == deck_id,
-        Deck.user_id == current_user.id
-    ).first()
-    
-    if not deck:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Deck not found or you don't have access to it"
-        )
-    
-    # Update deck source type
-    deck.source_type = schemas.SourceType.TEXT
-    deck.updated_at = datetime.utcnow()
-    
-    # Read and process text file
-    try:
-        content = await file.read()
-        text_content = content.decode('utf-8')
-        
-        # Split content into lines
-        lines = text_content.split('\n')
-        
-        # Process file configuration
-        separator = '\t'  # Default separator
-        html_enabled = False
-        tags_column = None
-        
-        # Look for configuration lines at the beginning of the file
-        config_lines = []
-        data_lines = []
-        
-        for line in lines:
-            if line.strip() == '':
-                continue
-                
-            if line.startswith('#'):
-                config_lines.append(line)
-            else:
-                data_lines.append(line)
-        
-        # Process configuration
-        for config in config_lines:
-            if config.startswith('#separator:'):
-                sep_value = config[len('#separator:'):].strip()
-                if sep_value == 'tab':
-                    separator = '\t'
-                elif sep_value == 'comma':
-                    separator = ','
-                elif sep_value == 'semicolon':
-                    separator = ';'
-                elif len(sep_value) == 1:
-                    separator = sep_value
-            elif config.startswith('#html:'):
-                html_value = config[len('#html:'):].strip().lower()
-                html_enabled = (html_value == 'true')
-            elif config.startswith('#tags column:'):
-                try:
-                    tags_column = int(config[len('#tags column:'):].strip()) - 1
-                except ValueError:
-                    pass
-        
-        # Process data lines
-        cards_added = 0
-        
-        for line in data_lines:
-            if not line.strip():
-                continue
-                
-            # Split by separator
-            fields = line.split(separator)
-            
-            if len(fields) < 2:
-                continue  # Skip if not enough fields for front and back
-            
-            front_content = fields[0].strip()
-            back_content = fields[1].strip()
-            
-            # Process tags if specified
-            tags = None
-            if tags_column is not None and tags_column < len(fields):
-                tags = fields[tags_column].strip()
-            
-            # If HTML is disabled, escape HTML content
-            if not html_enabled:
-                # Simple HTML escaping (replace with more robust solution if needed)
-                front_content = front_content.replace('<', '&lt;').replace('>', '&gt;')
-                back_content = back_content.replace('<', '&lt;').replace('>', '&gt;')
-            
-            # Add card if we have content
-            if front_content and back_content:
-                new_card = Card(
-                    deck_id=deck_id,
-                    front_content=front_content,
-                    back_content=back_content,
-                    source="text_import",
-                    difficulty_level="new",
-                    card_state="new",
-                    tags=tags
-                )
-                db.add(new_card)
-                cards_added += 1
-        
-        if cards_added == 0:
-            raise ValueError("No valid cards found in the text file")
-        
-        db.commit()
-        db.refresh(deck)
-        
-        # Get updated card count
-        card_count = db.query(func.count(Card.id)).filter(Card.deck_id == deck_id).scalar()
-        
-        # Format response
-        deck_dict = schemas.DeckResponse.from_orm(deck).dict()
-        deck_dict["card_count"] = card_count
-        deck_dict["import_details"] = {
-            "cards_added": cards_added,
-            "format": "text",
-            "html_enabled": html_enabled
-        }
-        
-        return schemas.DeckResponse(**deck_dict)
-        
-    except Exception as e:
-        # Rollback in case of error
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error processing text file: {str(e)}"
-        )

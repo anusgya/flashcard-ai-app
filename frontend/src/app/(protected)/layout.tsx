@@ -1,5 +1,7 @@
-// app/(protected)/layout.tsx (Protected layout)
+import type React from "react";
 import { Navigation } from "@/components/navigation";
+import { PomodoroProvider } from "@/hooks/use-pomodoro";
+import { FloatingPomodoro } from "@/components/ui/pomodoro/floating-pomodoro";
 
 export default function ProtectedLayout({
   children,
@@ -7,9 +9,12 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen">
-      <Navigation/>
-      <main className="flex-1 overflow-auto">{children}</main>
-    </div>
+    <PomodoroProvider>
+      <div className="flex h-screen">
+        <Navigation />
+        <main className="flex-1 overflow-auto">{children}</main>
+        <FloatingPomodoro />
+      </div>
+    </PomodoroProvider>
   );
 }

@@ -52,6 +52,7 @@ class CardCreate(CardBase):
 class CardGenerationRequest(BaseModel):
     deck_id: UUID4 = Field(..., description="The ID of the deck to add generated cards to.")
     num_flashcards: int = Field(..., gt=0, le=50, description="Number of cards to generate (max 50).")
+    source_type: str = Field(..., description="The type of source to generate flashcards from (e.g. 'pdf', 'youtube')")
     source_text: str = Field(..., description="URL or path to the pdf file")
     topic: Optional[str] = Field(None, description="The topic of the flashcards")
     # Add other generation parameters as needed, e.g., difficulty hint

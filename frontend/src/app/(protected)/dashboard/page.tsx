@@ -7,7 +7,7 @@ import ActivityHeatmap from "@/components/activity-heatmap";
 import Link from "next/link";
 import { useRecentDecks } from "@/hooks/api/use-deck"; // Import the hook
 import useMe from "@/hooks/api/use-me";
-import { useCards } from "@/hooks/api/use-card";
+import { PomodoroTimer } from "@/components/ui/pomodoro/pomodoro-timer";
 
 interface DeckCardProps {
   id: string;
@@ -100,6 +100,11 @@ export default function Dashboard() {
             Daily Streaks
           </span>
         </motion.div>
+      </motion.div>
+
+      {/* Pomodoro Timer */}
+      <motion.div variants={itemVariants}>
+        <PomodoroTimer />
       </motion.div>
 
       {/* Action Cards */}
