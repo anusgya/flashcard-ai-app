@@ -9,9 +9,9 @@
  */
 export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
   // Retrieve the authentication token from local storage
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   // Define the base URL for the API
-  const baseUrl = 'http://localhost:8000'; // Or your actual API base URL
+  const baseUrl = "http://localhost:8000"; // Or your actual API base URL
 
   // Initialize headers object
   const baseHeaders: HeadersInit = {};
@@ -20,12 +20,12 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
   // DO NOT add Content-Type if the body is FormData, as the browser
   // needs to set it automatically with the correct boundary.
   if (!(options.body instanceof FormData)) {
-    baseHeaders['Content-Type'] = 'application/json';
+    baseHeaders["Content-Type"] = "application/json";
   }
 
   // Add Authorization header if token exists
   if (token) {
-    baseHeaders['Authorization'] = `Bearer ${token}`;
+    baseHeaders["Authorization"] = `Bearer ${token}`;
   }
 
   // Merge base headers with any custom headers provided in options
@@ -39,7 +39,7 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
     const response = await fetch(`${baseUrl}${url}`, {
       ...options, // Spread the original options (method, body, etc.)
       headers, // Use the merged headers
-      credentials: 'include', // Include cookies in requests
+      credentials: "include", // Include cookies in requests
     });
 
     // --- Response Handling ---
@@ -58,7 +58,8 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
       // Create a new Error object with details
       const error = new Error(
         // Use detailed message from server if available, otherwise use status text
-        (errorData as any)?.detail || `Error ${response.status}: ${response.statusText}`
+        (errorData as any)?.detail ||
+          `Error ${response.status}: ${response.statusText}`
       );
 
       // Attach status code and full error info to the error object
@@ -67,7 +68,9 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
 
       // Log a specific message for authentication failures
       if (response.status === 401) {
-        console.error('Authentication failed (401). Token might be invalid or expired. Please log in again.');
+        console.error(
+          "Authentication failed (401). Token might be invalid or expired. Please log in again."
+        );
         // Optionally: trigger a logout or redirect to login page here
         // window.location.href = '/login';
       }
@@ -79,28 +82,29 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
     // --- Successful Response Handling ---
 
     // Get content type and length to decide how to parse the body
-    const contentType = response.headers.get('content-type');
-    const contentLength = response.headers.get('content-length');
+    const contentType = response.headers.get("content-type");
+    const contentLength = response.headers.get("content-length");
 
     // Handle 204 No Content or responses with zero content length
-    if (response.status === 204 || contentLength === '0') {
+    if (response.status === 204 || contentLength === "0") {
       // Return a simple success indicator or null/undefined as appropriate
       return { success: true, status: response.status };
     }
 
     // Parse as JSON if the content type indicates JSON
-    if (contentType && contentType.includes('application/json')) {
+    if (contentType && contentType.includes("application/json")) {
       return response.json();
     }
 
     // For other content types (like text/plain), return as text
     // You might add more handlers here (e.g., for blobs) if needed
-    console.warn(`Response received with Content-Type: ${contentType}. Parsing as text.`);
+    console.warn(
+      `Response received with Content-Type: ${contentType}. Parsing as text.`
+    );
     return response.text();
-
   } catch (error) {
     // Catch fetch errors (network issues, etc.) or errors thrown above
-    console.error('Fetch error:', error);
+    console.error("Fetch error:", error);
     // Re-throw the error so the calling component knows something went wrong
     throw error;
   }
@@ -112,4 +116,3 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
  * @returns Promise resolving with the parsed response data.
  */
 export const fetcher = (url: string) => fetchWithAuth(url);
-

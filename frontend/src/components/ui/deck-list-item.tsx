@@ -34,7 +34,6 @@ interface DeckListItemProps {
   id: string; // Add this prop
   OnDeckDelete: () => void;
   OnDeckEdit: () => void;
-
 }
 
 export function DeckListItem({
@@ -59,20 +58,20 @@ export function DeckListItem({
     try {
       await deleteDeck(id);
       toast({
-        title: 'Deck deleted successfully!',
-        variant: 'default',
+        title: "Deck deleted successfully!",
+        variant: "default",
       });
       setShowDeleteDialog(false);
       // You might want to refresh the deck list here
-      if(OnDeckDelete){
+      if (OnDeckDelete) {
         OnDeckDelete();
       }
     } catch (error) {
-      console.error('Failed to delete deck:', error);
+      console.error("Failed to delete deck:", error);
       toast({
-        title: 'Failed to delete deck!',
-        variant: 'destructive',
-      })
+        title: "Failed to delete deck!",
+        variant: "destructive",
+      });
     }
   };
 
@@ -83,21 +82,19 @@ export function DeckListItem({
         description: formData.description,
       });
       toast({
-        title: 'Deck updated successfully!',
-        variant: 'default',
+        title: "Deck updated successfully!",
+        variant: "default",
       });
       setShowEditDialog(false);
-      if(OnDeckEdit){
+      if (OnDeckEdit) {
         OnDeckEdit();
       }
-      
-      
     } catch (error) {
       toast({
-        title: 'Failed to update deck!',
-        variant: 'destructive',
-      })
-      console.error('Failed to update deck:', error);
+        title: "Failed to update deck!",
+        variant: "destructive",
+      });
+      console.error("Failed to update deck:", error);
     }
   };
 
@@ -126,7 +123,9 @@ export function DeckListItem({
             </div>
             <div className="flex flex-col items-center gap-1">
               <span className="text-primary-green text-md">{learnCount}</span>
-              <span className="text-secondary-foreground text-xs">learning</span>
+              <span className="text-secondary-foreground text-xs">
+                learning
+              </span>
             </div>
           </div>
 
@@ -163,21 +162,20 @@ export function DeckListItem({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription className="text-secondary-foreground"> 
-              This action cannot be undone. This will permanently delete the deck
-              "{title}" and all its cards.
+            <AlertDialogDescription className="text-secondary-foreground">
+              This action cannot be undone. This will permanently delete the
+              deck "{title}" and all its cards.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="bg-transparent border-0 hover:bg-secondary">
-            
-                Cancel
-
+              Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}  className="bg-transparent border-0 hover:bg-secondary text-red-500">
-
-                Delete
-
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-transparent border-0 hover:bg-secondary text-red-500"
+            >
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -196,7 +194,9 @@ export function DeckListItem({
               <input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </div>
@@ -204,7 +204,12 @@ export function DeckListItem({
               <textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </div>

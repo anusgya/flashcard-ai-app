@@ -271,3 +271,42 @@ def update_leaderboard_entry(db: Session, user_id: UUID):
             entry.rank = i + 1
         
         db.commit()
+
+# Get user's study sessions
+@router.get("/api/study/sessions")
+async def get_user_study_sessions(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_active_user)
+):
+    # Implementation for getting user's study sessions
+    pass
+
+# Get user's study stats for a specific deck
+@router.get("/api/study/stats/{deck_id}")
+async def get_user_study_stats(
+    deck_id: UUID,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_active_user)
+):
+    # Implementation for getting user's study stats for a specific deck
+    pass
+
+# Get user's quiz sessions
+@router.get("/api/quiz/sessions")
+async def get_user_quiz_sessions(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_active_user)
+):
+    # Implementation for getting user's quiz sessions
+    pass
+
+# Get user's quiz stats for a specific deck
+@router.get("/api/quiz/stats/{deck_id}")
+async def get_user_quiz_stats(
+    deck_id: UUID,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_active_user)
+):
+    # Implementation for getting user's quiz stats for a specific deck
+    pass
+

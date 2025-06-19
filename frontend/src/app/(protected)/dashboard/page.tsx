@@ -112,6 +112,9 @@ export default function Dashboard() {
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
         variants={itemVariants}
       >
+        <h2 className="text-lg font-semibold text-foreground col-span-full mb-2">
+          Action Buttons
+        </h2>
         <motion.div
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.98 }}

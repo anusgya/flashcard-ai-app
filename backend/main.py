@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 
 # Load environment variables
