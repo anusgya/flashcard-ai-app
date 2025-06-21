@@ -25,6 +25,7 @@ from schemas.quiz import (
     QuizQuestionResponse
 )
 from auth import get_current_active_user
+from utils.streak_utils import update_daily_streak
 
 # Import the Gemini helper functions
 from utils.gemini_utils import generate_quiz_question, condense_answer
@@ -88,9 +89,26 @@ def update_quiz_session(
     if session.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to update this session")
     
-    for key, value in session_update.dict().items():
+    update_data = session_update.dict(exclude_unset=True)
+
+    # Correctly handle timezone-aware datetime from frontend
+    if 'end_time' in update_data and isinstance(update_data['end_time'], datetime):
+        # Convert aware datetime to naive UTC datetime before saving
+        update_data['end_time'] = update_data['end_time'].astimezone(UTC).replace(tzinfo=None)
+
+    # Check if the session is being concluded
+    is_ending = "end_time" in update_data and update_data["end_time"] is not None
+
+    for key, value in update_data.items():
         setattr(session, key, value)
     
+    # If the session has ended, update the user's total points
+    if is_ending and session.points_earned and session.points_earned > 0:
+        user = db.query(models.User).filter(models.User.id == current_user.id).first()
+        if user:
+            user.total_points = (user.total_points or 0) + session.points_earned
+            db.add(user)
+
     db.commit()
     db.refresh(session)
     return session
@@ -101,6 +119,9 @@ def submit_quiz_answer(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):
+    # Update daily streak
+    update_daily_streak(db, current_user)
+
     # Verify session exists and belongs to user
     session = db.query(models.QuizSession).filter(models.QuizSession.id == answer.session_id).first()
     if not session or session.user_id != current_user.id:

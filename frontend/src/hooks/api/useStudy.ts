@@ -1,8 +1,12 @@
-import useSWR from 'swr';
-import { fetcher, fetchWithAuth } from './fetchWithAuth'; // Assuming fetchWithAuth handles token injection
-import { TimeRange, ResponseQuality, ConfidenceLevel, CardState } from '@/enums'; // Adjust path as needed
-import { UUID } from 'crypto'; // Or use 'string' if UUIDs are treated as strings
-
+import useSWR from "swr";
+import { fetcher, fetchWithAuth } from "./fetchWithAuth"; // Assuming fetchWithAuth handles token injection
+import {
+  TimeRange,
+  ResponseQuality,
+  ConfidenceLevel,
+  CardState,
+} from "@/enums"; // Adjust path as needed
+import { UUID } from "crypto"; // Or use 'string' if UUIDs are treated as strings
 
 // --- Backend Schema Interfaces ---
 
@@ -18,11 +22,9 @@ interface StudySession {
   created_at: string; // ISO 8601 date string
 }
 
-
 interface StudySessionCreate {
   deck_id: UUID;
 }
-
 
 interface StudySessionUpdate {
   end_time?: string | null;
@@ -30,7 +32,6 @@ interface StudySessionUpdate {
   accuracy?: number;
   points_earned?: number;
 }
-
 
 // Input type for creating a record
 interface StudyRecordCreate {
@@ -52,7 +53,6 @@ interface StudyRecordResponse extends StudyRecordCreate {
   repetition_number: number;
 }
 
-
 // Updated to match backend schema
 interface DueCardsResponse {
   due_now: number;
@@ -60,7 +60,6 @@ interface DueCardsResponse {
   learning_cards: number;
   review_cards: number;
 }
-
 
 interface SpacedRepetitionProgress {
   total_cards: number;
@@ -80,7 +79,6 @@ interface SpacedRepetitionProgress {
   average_ease_factor: number;
 }
 
-
 // Updated NextCardResponse to include all fields from the backend
 interface NextCardResponse {
   card_id: UUID;
@@ -88,9 +86,8 @@ interface NextCardResponse {
   current_streak?: number | null;
   total_reviews?: number | null;
   card_state: string; // CardState enum as string
-  is_due: boolean;   // Added to match backend
+  is_due: boolean; // Added to match backend
 }
-
 
 interface StudySessionStats {
   total_sessions: number;
@@ -101,23 +98,28 @@ interface StudySessionStats {
   mastery_rate: number;
 }
 
-
 // --- SWR Hooks and API Functions ---
 
 // Get study sessions list
 export function useStudySessions(timeRange: TimeRange, deckId?: UUID | null) {
   const queryParams = new URLSearchParams();
-  queryParams.append('time_range', timeRange);
-  if (deckId) queryParams.append('deck_id', deckId as string); // Cast UUID to string if needed
+  queryParams.append("time_range", timeRange);
+  if (deckId) queryParams.append("deck_id", deckId as string); // Cast UUID to string if needed
 
-  const url = deckId !== undefined ? `/api/study/sessions?${queryParams.toString()}` : null; // Conditionally fetch
+  const url =
+    deckId !== undefined
+      ? `/api/study/sessions?${queryParams.toString()}`
+      : null; // Conditionally fetch
 
-  const { data, error, isLoading, mutate } = useSWR<StudySession[]>(url, fetcher, {
-    revalidateOnFocus: false,
-    revalidateIfStale: true,
-    dedupingInterval: 60000, // 1 minute
-  });
-
+  const { data, error, isLoading, mutate } = useSWR<StudySession[]>(
+    url,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: true,
+      dedupingInterval: 60000, // 1 minute
+    }
+  );
 
   return {
     sessions: data,
@@ -127,7 +129,6 @@ export function useStudySessions(timeRange: TimeRange, deckId?: UUID | null) {
     mutate,
   };
 }
-
 
 // Get a specific study session
 export function useStudySession(sessionId: UUID | null) {
@@ -143,7 +144,6 @@ export function useStudySession(sessionId: UUID | null) {
     }
   );
 
-
   return {
     session: data,
     isLoading,
@@ -153,15 +153,17 @@ export function useStudySession(sessionId: UUID | null) {
   };
 }
 
-
 // Create a new study session
-export async function createStudySession(sessionData: StudySessionCreate): Promise<StudySession> {
+export async function createStudySession(
+  sessionData: StudySessionCreate,
+  options: RequestInit = {}
+): Promise<StudySession> {
   return fetchWithAuth(`/api/study/sessions`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(sessionData),
+    ...options,
   });
 }
-
 
 // Update an existing study session (e.g., to set end_time)
 export async function updateStudySession(
@@ -169,20 +171,20 @@ export async function updateStudySession(
   sessionData: Partial<StudySessionUpdate> // Use Partial for flexibility
 ): Promise<StudySession> {
   return fetchWithAuth(`/api/study/sessions/${sessionId}`, {
-    method: 'PUT',
+    method: "PUT",
     body: JSON.stringify(sessionData),
   });
 }
 
-
 // Create a study record after reviewing a card
-export async function createStudyRecord(recordData: StudyRecordCreate): Promise<StudyRecordResponse> {
+export async function createStudyRecord(
+  recordData: StudyRecordCreate
+): Promise<StudyRecordResponse> {
   return fetchWithAuth(`/api/study/records`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(recordData),
   });
 }
-
 
 // Get due cards count - updated to match the backend response schema
 export function useDueCards(deckId: UUID | null) {
@@ -198,7 +200,6 @@ export function useDueCards(deckId: UUID | null) {
     }
   );
 
-
   return {
     dueCards: data,
     isLoading,
@@ -207,7 +208,6 @@ export function useDueCards(deckId: UUID | null) {
     mutate,
   };
 }
-
 
 // Get spaced repetition progress stats for a deck - updated to include state_distribution
 export function useSpacedRepetitionProgress(deckId: UUID | null) {
@@ -223,7 +223,6 @@ export function useSpacedRepetitionProgress(deckId: UUID | null) {
     }
   );
 
-
   return {
     progress: data,
     isLoading,
@@ -232,7 +231,6 @@ export function useSpacedRepetitionProgress(deckId: UUID | null) {
     mutate,
   };
 }
-
 
 // Get the next card to study in a deck - updated to match the backend response schema
 export function useNextCard(deckId: UUID | null) {
@@ -253,7 +251,7 @@ export function useNextCard(deckId: UUID | null) {
       return await fetcher(url);
     } catch (error) {
       const typedError = error as ErrorWithResponse;
-      
+
       // If we get a 404 (no cards available), return null instead of throwing
       if (typedError.response?.status === 404 || typedError.status === 404) {
         return null;
@@ -280,9 +278,9 @@ export function useNextCard(deckId: UUID | null) {
       // Clear cache before mutating to ensure we don't get stale data
       // The key part: this forces SWR to make a fresh request instead of using the cache
       await mutate(undefined, {
-        revalidate: true, 
+        revalidate: true,
         populateCache: true,
-        rollbackOnError: false
+        rollbackOnError: false,
       });
     }
     return data;
@@ -311,7 +309,6 @@ export function useStudyStats(deckId: UUID | null) {
     }
   );
 
-
   return {
     stats: data,
     isLoading,
@@ -322,12 +319,14 @@ export function useStudyStats(deckId: UUID | null) {
 }
 
 // Function to update card states across the system
-export async function updateCardStates(deckId?: UUID): Promise<{ success: boolean; message: string }> {
-  const url = deckId 
-    ? `/api/study/update-card-states?deck_id=${deckId}` 
-    : '/api/study/update-card-states';
-  
+export async function updateCardStates(
+  deckId?: UUID
+): Promise<{ success: boolean; message: string }> {
+  const url = deckId
+    ? `/api/study/update-card-states?deck_id=${deckId}`
+    : "/api/study/update-card-states";
+
   return fetchWithAuth(url, {
-    method: 'POST',
+    method: "POST",
   });
 }

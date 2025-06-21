@@ -57,6 +57,7 @@ class QuizAnswer(Base):
     is_correct = Column(Boolean, default=False)
     time_taken = Column(Integer, default=0)  # in seconds
     points_earned = Column(Integer, default=0)
+    submitted_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
     session = relationship("QuizSession", back_populates="answers")

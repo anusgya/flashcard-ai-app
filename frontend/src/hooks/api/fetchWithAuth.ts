@@ -7,7 +7,11 @@
  * @param options - Standard RequestInit options for fetch
  * @returns Promise resolving with the parsed response data
  */
-export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+export const fetchWithAuth = async (
+  url: string,
+  options: RequestInit = {},
+  fetchOptions: { keepalive?: boolean } = {}
+) => {
   // Retrieve the authentication token from local storage
   const token = localStorage.getItem("token");
   // Define the base URL for the API
@@ -40,9 +44,16 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
       ...options, // Spread the original options (method, body, etc.)
       headers, // Use the merged headers
       credentials: "include", // Include cookies in requests
+      ...fetchOptions, // Add keepalive if provided
     });
 
     // --- Response Handling ---
+
+    // A fetch with keepalive cannot be read after the page has been dismissed.
+    // We return early without parsing the body.
+    if (fetchOptions.keepalive) {
+      return { success: true, status: "keepalive" };
+    }
 
     // Check if the response indicates an error
     if (!response.ok) {

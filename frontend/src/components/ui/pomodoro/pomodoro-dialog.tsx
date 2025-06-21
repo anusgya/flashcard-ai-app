@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -44,19 +45,22 @@ export function PomodoroDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] py-10 px-8">
         <DialogHeader>
           <DialogTitle>Pomodoro Settings</DialogTitle>
-          <DialogDescription className="text-secondary-foreground">
+          <DialogDescription className="text-secondary-foreground font-fragment-mono">
             Configure your pomodoro timer preferences
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          <div className="space-y-4">
-            <div className="space-y-2">
+          <div className="space-y-6">
+            <div className="space-y-4">
               <Label>
-                Focus Duration: {localSettings.focusDuration} minutes
+                <div className="text-sm font-semibold">Focus Duration</div>
+                <span className="font-fragment-mono text-secondary-foreground">
+                  {localSettings.focusDuration} minutes
+                </span>
               </Label>
               <Slider
                 value={[localSettings.focusDuration]}
@@ -72,9 +76,12 @@ export function PomodoroDialog({
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-4">
               <Label>
-                Short Break: {localSettings.shortBreakDuration} minutes
+                <div className="text-sm font-semibold">Short Break</div>
+                <span className="font-fragment-mono text-secondary-foreground">
+                  {localSettings.shortBreakDuration} minutes
+                </span>
               </Label>
               <Slider
                 value={[localSettings.shortBreakDuration]}
@@ -90,9 +97,12 @@ export function PomodoroDialog({
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-4">
               <Label>
-                Long Break: {localSettings.longBreakDuration} minutes
+                <div className="text-sm font-semibold">Long Break</div>
+                <span className="font-fragment-mono text-secondary-foreground">
+                  {localSettings.longBreakDuration} minutes
+                </span>
               </Label>
               <Slider
                 value={[localSettings.longBreakDuration]}
@@ -107,8 +117,8 @@ export function PomodoroDialog({
                 }
               />
             </div>
-
-            <div className="space-y-4 pt-4">
+            <Separator orientation="horizontal" className="mt-16" />
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label htmlFor="auto-breaks">Auto-start breaks</Label>
                 <Switch
@@ -137,6 +147,7 @@ export function PomodoroDialog({
                 />
               </div>
             </div>
+            <Separator orientation="horizontal" className="mt-16" />
 
             <div className="space-y-2 pt-4">
               <Label>Alarm Sound</Label>
@@ -151,8 +162,7 @@ export function PomodoroDialog({
                   }
                   className={cn(
                     "text-xs",
-                    localSettings.alarmSound === "bell" &&
-                      "bg-green-500 hover:bg-green-600"
+                    localSettings.alarmSound === "bell" && "bg-primary-green"
                   )}
                 >
                   Bell

@@ -52,9 +52,9 @@ export function FloatingPomodoro() {
       case "focus":
         return {
           color: "",
-          bgColor: "bg-primary-blue",
-          textColor: "text-primary-blue",
-          borderColor: "border-primary-blue/30",
+          bgColor: "bg-primary-orange",
+          textColor: "text-primary-orange",
+          borderColor: "border-primary-orange/30",
         };
       case "short-break":
         return {
@@ -65,10 +65,10 @@ export function FloatingPomodoro() {
         };
       case "long-break":
         return {
-          // color: "from-primary-orange/20 to-primary-orange-secondary/30",
-          bgColor: "bg-primary-orange",
-          textColor: "text-primary-orange",
-          borderColor: "border-primary-orange/30",
+          // color: "from-primary-blue/20 to-primary-blue-secondary/30",
+          bgColor: "bg-primary-blue",
+          textColor: "text-primary-blue",
+          borderColor: "border-primary-blue/30",
         };
     }
   };
@@ -102,7 +102,7 @@ export function FloatingPomodoro() {
             <motion.div
               className="relative bg-background backdrop-blur-md border border-border border-dashed rounded-2xl  overflow-hidden"
               animate={{
-                width: isExpanded ? 320 : 200,
+                width: isExpanded ? 320 : 150,
                 height: isExpanded ? 300 : 60,
               }}
               transition={{
@@ -149,20 +149,20 @@ export function FloatingPomodoro() {
                         <Play className="h-4 w-4" />
                       )}
                     </Button>
-                    <Button
+                    {/* <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => setIsExpanded(true)}
                       className="h-8 w-8 p-0 hover:bg-muted rounded-full"
                     >
                       <Maximize2 className="h-4 w-4" />
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
               )}
 
               {/* Expanded view */}
-              {isExpanded && (
+              {/* {isExpanded && (
                 <div className="p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className={`font-semibold ${modeConfig.textColor}`}>
@@ -199,7 +199,7 @@ export function FloatingPomodoro() {
                       onClick={() => switchMode("focus")}
                       className={`text-xs ${
                         currentMode === "focus"
-                          ? "bg-primary-blue hover:bg-primary-blue-secondary text-secondary-foreground"
+                          ? "bg-primary-orange hover:bg-primary-orange-secondary text-foreground"
                           : "hover:bg-muted"
                       }`}
                     >
@@ -227,7 +227,7 @@ export function FloatingPomodoro() {
                       onClick={() => switchMode("long-break")}
                       className={`text-xs ${
                         currentMode === "long-break"
-                          ? "bg-primary-orange hover:bg-primary-orange-secondary text-foreground"
+                          ? "bg-primary-blue hover:bg-primary-blue-secondary text-foreground"
                           : "hover:bg-muted"
                       }`}
                     >
@@ -265,7 +265,7 @@ export function FloatingPomodoro() {
                     </Button>
                   </div>
                 </div>
-              )}
+              )} */}
             </motion.div>
           </div>
         </motion.div>

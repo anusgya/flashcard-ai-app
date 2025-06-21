@@ -14,10 +14,7 @@ import {
 } from "@/hooks/api/useStudy";
 import { UUID } from "crypto";
 import { ResponseQuality, ConfidenceLevel } from "@/enums";
-import { 
-  useCardLLMResponses, 
-  ResponseType 
-} from "@/hooks/api/useLLMResponses";
+import { useCardLLMResponses, ResponseType } from "@/hooks/api/useLLMResponses";
 
 interface CardMedia {
   id: string;
@@ -82,30 +79,68 @@ export default function LearnPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeckCompleted, setIsDeckCompleted] = useState(false); // Added state for deck completion
   const cardStartTimeRef = useRef<number | null>(null);
+  const sessionIdRef = useRef<UUID | null>(null); // Ref to hold session ID for cleanup
+  const sessionStatsRef = useRef({
+    cards_studied: 0,
+    correct_answers: 0,
+    points_earned: 0,
+  });
 
   // 1. Create Study Session on mount
   useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
     const startSession = async () => {
       if (!deckId) return;
       setIsSessionLoading(true);
       setSessionError(null);
       try {
-        const session = await createStudySession({ deck_id: deckId });
+        const session = await createStudySession(
+          { deck_id: deckId },
+          { signal }
+        );
+        console.log("Study Session Created:", session);
         setSessionId(session.id);
-      } catch (error) {
-        console.error("Failed to create study session:", error);
-        setSessionError("Could not start study session.");
+        sessionIdRef.current = session.id; // Store session ID in ref
+      } catch (error: any) {
+        if (error.name !== "AbortError") {
+          console.error("Failed to create study session:", error);
+          setSessionError("Could not start study session.");
+        }
       } finally {
-        setIsSessionLoading(false);
+        if (!signal.aborted) {
+          setIsSessionLoading(false);
+        }
       }
     };
     startSession();
 
-    // Optional: Cleanup function to end session if user navigates away
+    // Cleanup function to end session if user navigates away
     return () => {
-      if (sessionId) {
-        // updateStudySession(sessionId, { end_time: new Date().toISOString() })
-        //   .catch(err => console.error("Failed to update session end time:", err));
+      controller.abort();
+
+      if (sessionIdRef.current) {
+        const stats = sessionStatsRef.current;
+        const accuracy =
+          stats.cards_studied > 0
+            ? stats.correct_answers / stats.cards_studied
+            : 0;
+
+        const sessionUpdateData = {
+          end_time: new Date().toISOString(),
+          cards_studied: stats.cards_studied,
+          accuracy: accuracy,
+          points_earned: stats.points_earned,
+        };
+
+        console.log(
+          `Ending study session: ${sessionIdRef.current} with data:`,
+          sessionUpdateData
+        );
+        updateStudySession(sessionIdRef.current, sessionUpdateData).catch(
+          (err) => console.error("Failed to update session end time:", err)
+        );
       }
     };
   }, [deckId]);
@@ -131,28 +166,33 @@ export default function LearnPage() {
     card: currentCardDetails,
     isLoading: isLoadingCardDetails,
     isError: isErrorCardDetails,
-  } = useCard(nextCard?.card_id || '');
+  } = useCard(nextCard?.card_id || "");
 
   // 4. Fetch LLM responses for the current card
-  const { 
-    responses: llmResponses, 
-    isLoading: loadingResponses, 
-    isError: responseError 
-  } = useCardLLMResponses(nextCard?.card_id || '');
+  const {
+    responses: llmResponses,
+    isLoading: loadingResponses,
+    isError: responseError,
+  } = useCardLLMResponses(nextCard?.card_id || "");
 
   // Group responses by type
-  const mnemonics = llmResponses?.filter((r: LLMResponse) => r.response_type === 'mnemonic') || [];
-  const examples = llmResponses?.filter((r: LLMResponse) => r.response_type === 'example') || [];
-  const explanations = llmResponses?.filter((r: LLMResponse) => r.response_type === 'explanation') || [];
-  
+  const mnemonics =
+    llmResponses?.filter((r: LLMResponse) => r.response_type === "mnemonic") ||
+    [];
+  const examples =
+    llmResponses?.filter((r: LLMResponse) => r.response_type === "example") ||
+    [];
+  const explanations =
+    llmResponses?.filter(
+      (r: LLMResponse) => r.response_type === "explanation"
+    ) || [];
+
   // Get the most recent ones
   const latestMnemonic = mnemonics[0];
   const latestExample = examples[0];
   const latestExplanation = explanations[0];
 
-
-  console.log("explanation", latestExplanation?.content)
-
+  console.log("explanation", latestExplanation?.content);
 
   // Start timer when a new card is loaded and ready
   useEffect(() => {
@@ -162,30 +202,36 @@ export default function LearnPage() {
   }, [currentCardDetails, isLoadingCardDetails, isSubmitting]);
 
   // 4. Handle Answer Submission
-  const handleAnswer = async (difficulty: "again" | "hard" | "good" | "perfect") => {
-    if (!sessionId || !nextCard || !cardStartTimeRef.current || isSubmitting) return;
+  const handleAnswer = async (
+    difficulty: "again" | "hard" | "good" | "perfect"
+  ) => {
+    if (!sessionId || !nextCard || !cardStartTimeRef.current || isSubmitting)
+      return;
 
     setIsSubmitting(true);
     const endTime = Date.now();
     const timeTaken = Math.round((endTime - cardStartTimeRef.current) / 1000);
 
     try {
-      await createStudyRecord({
+      const record = await createStudyRecord({
         session_id: sessionId,
         card_id: nextCard.card_id,
         response_quality: difficultyMap[difficulty],
         time_taken: timeTaken,
-        confidence_level: ConfidenceLevel.MEDIUM
+        confidence_level: ConfidenceLevel.MEDIUM,
       });
+
+      // Update session stats in ref
+      sessionStatsRef.current.cards_studied += 1;
+      if (difficulty === "good" || difficulty === "perfect") {
+        sessionStatsRef.current.correct_answers += 1;
+      }
+      sessionStatsRef.current.points_earned += record.points_earned;
 
       // Try to fetch the next card
       await fetchNextCard();
-      
-      // We don't need to check result here since the useEffect will
-      // detect if nextCard becomes null after fetching
 
       cardStartTimeRef.current = null; // Reset timer ref for the next card
-
     } catch (error) {
       console.error("Failed to create study record:", error);
     } finally {
@@ -195,16 +241,32 @@ export default function LearnPage() {
 
   // --- Loading and Error States ---
   if (isSessionLoading) {
-    return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin mr-2" /> Creating study session...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin mr-2" /> Creating study
+        session...
+      </div>
+    );
   }
 
   if (sessionError) {
-    return <div className="flex flex-col items-center justify-center h-screen text-red-500">{sessionError} <Button onClick={() => router.back()} className="mt-4">Go Back</Button></div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-screen text-red-500">
+        {sessionError}{" "}
+        <Button onClick={() => router.back()} className="mt-4">
+          Go Back
+        </Button>
+      </div>
+    );
   }
 
   // Show loading for the *next* card fetch FIRST
   if (isLoadingNextCard) {
-    return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin mr-2" /> Loading next card...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin mr-2" /> Loading next card...
+      </div>
+    );
   }
 
   // THEN, check for completion *after* next card loading is done
@@ -212,8 +274,12 @@ export default function LearnPage() {
   if (isDeckCompleted || !nextCard) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4">
-        <h2 className="text-2xl font-semibold text-foreground">🎉 All cards studied!</h2>
-        <p className="text-secondary-foreground">You've completed this study session.</p>
+        <h2 className="text-2xl font-semibold text-foreground">
+          🎉 All cards studied!
+        </h2>
+        <p className="text-secondary-foreground">
+          You've completed this study session.
+        </p>
         <Button
           variant="outline"
           onClick={() => router.back()}
@@ -229,30 +295,52 @@ export default function LearnPage() {
 
   // Now handle loading for the specific card's details
   if (isLoadingCardDetails) {
-     return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin mr-2" /> Loading card details...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin mr-2" /> Loading card
+        details...
+      </div>
+    );
   }
 
   // Handle error loading card details OR if details are unexpectedly null/undefined
-   if (isErrorCardDetails || !currentCardDetails) {
-     console.error("Error loading card details or card details are null/undefined", { isError: isErrorCardDetails, details: currentCardDetails });
-     return <div className="flex justify-center items-center h-screen text-red-500">Error loading card details. Please try again or return to decks.</div>;
-   }
+  if (isErrorCardDetails || !currentCardDetails) {
+    console.error(
+      "Error loading card details or card details are null/undefined",
+      { isError: isErrorCardDetails, details: currentCardDetails }
+    );
+    return (
+      <div className="flex justify-center items-center h-screen text-red-500">
+        Error loading card details. Please try again or return to decks.
+      </div>
+    );
+  }
 
   // --- Prepare Flashcard Props (only if card details are valid and loaded) ---
   const currentCard = currentCardDetails as Card;
 
-  const frontMedia = currentCard.media?.filter(m => m.side.toLowerCase() === "front") || [];
-  const backMedia = currentCard.media?.filter(m => m.side.toLowerCase() === "back") || [];
+  const frontMedia =
+    currentCard.media?.filter((m) => m.side.toLowerCase() === "front") || [];
+  const backMedia =
+    currentCard.media?.filter((m) => m.side.toLowerCase() === "back") || [];
 
-  const frontImage = frontMedia.find(m => m.media_type.toLowerCase() === 'image');
-  const frontAudio = frontMedia.find(m => m.media_type.toLowerCase() === 'audio');
-  const backImage = backMedia.find(m => m.media_type.toLowerCase() === 'image');
-  const backAudio = backMedia.find(m => m.media_type.toLowerCase() === 'audio');
+  const frontImage = frontMedia.find(
+    (m) => m.media_type.toLowerCase() === "image"
+  );
+  const frontAudio = frontMedia.find(
+    (m) => m.media_type.toLowerCase() === "audio"
+  );
+  const backImage = backMedia.find(
+    (m) => m.media_type.toLowerCase() === "image"
+  );
+  const backAudio = backMedia.find(
+    (m) => m.media_type.toLowerCase() === "audio"
+  );
 
   const formatMediaUrl = (media?: CardMedia) => {
     if (!media) return undefined;
     // Ensure correct base URL and path formatting
-    return `http://localhost:8000/${media.file_path.replace(/\\/g, '/')}`;
+    return `http://localhost:8000/${media.file_path.replace(/\\/g, "/")}`;
   };
 
   const flashcardProps = {

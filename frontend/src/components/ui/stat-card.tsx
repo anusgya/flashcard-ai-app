@@ -55,25 +55,27 @@ export default function StatCard({
       className={`overflow-hidden border-divider hover:border-primary-green/30 transition-all duration-300 group ${className}`}
     >
       <CardContent className="px-3 py-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <div className="p-3 bg-primary-green/10 rounded-full group-hover:bg-primary-green/20 transition-colors duration-300">
             {icon}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-secondary-foreground">
+              <p className="text-sm font-medium  text-secondary-foreground">
                 {title}
               </p>
-              {getTrendIndicator(trend)}
+              {/* {getTrendIndicator(trend)} */}
             </div>
             <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-bold text-foreground">{value}</p>
+              <p className="text-3xl font-bold mt-[2px] font-fragment-mono  text-foreground">
+                {value}
+              </p>
               {unit && (
-                <p className="text-sm text-secondary-foreground">{unit}</p>
+                <p className="text-sm  text-secondary-foreground">{unit}</p>
               )}
             </div>
             {additionalInfo && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-secondary-foreground mt-2">
                 {additionalInfo}
               </p>
             )}

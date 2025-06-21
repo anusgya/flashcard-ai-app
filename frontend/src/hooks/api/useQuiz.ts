@@ -139,12 +139,17 @@ export async function createQuizSession(
 // Update an existing quiz session
 export async function updateQuizSession(
   sessionId: UUID,
-  sessionData: Partial<QuizSessionUpdate>
+  sessionData: Partial<QuizSessionUpdate>,
+  options: { keepalive?: boolean } = {}
 ): Promise<QuizSession> {
-  return fetchWithAuth(`/api/quiz/sessions/${sessionId}`, {
-    method: "PUT",
-    body: JSON.stringify(sessionData),
-  });
+  return fetchWithAuth(
+    `/api/quiz/sessions/${sessionId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(sessionData),
+    },
+    options
+  );
 }
 
 // Submit a quiz answer
@@ -240,7 +245,8 @@ export function useSessionQuestions(sessionId: UUID | null) {
 export async function startQuiz(
   deckId: UUID,
   difficulty: QuizDifficulty = QuizDifficulty.MEDIUM,
-  numQuestions?: number
+  numQuestions?: number,
+  options: RequestInit = {}
 ): Promise<StartQuizResponse> {
   const queryParams = new URLSearchParams();
   queryParams.append("deck_id", deckId as string);
@@ -250,6 +256,7 @@ export async function startQuiz(
 
   return fetchWithAuth(`/api/quiz/start?${queryParams.toString()}`, {
     method: "POST",
+    ...options,
   });
 }
 

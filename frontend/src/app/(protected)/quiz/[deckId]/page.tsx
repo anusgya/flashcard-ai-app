@@ -58,6 +58,7 @@ export default function QuizPage(): React.ReactElement {
     QuizQuestionResponse[] | null
   >(null);
   const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
+  const [isCompleted, setIsCompleted] = useState<boolean>(false);
 
   const {
     session,
@@ -92,6 +93,9 @@ export default function QuizPage(): React.ReactElement {
 
   // Initialize the quiz session
   useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
     const initQuiz = async (): Promise<void> => {
       if (!deckId) {
         router.push("/decks"); // Redirect if no deck ID
@@ -102,22 +106,27 @@ export default function QuizPage(): React.ReactElement {
         const result: StartQuizResponse = await startQuiz(
           deckId as UUID,
           difficulty,
-          10
+          10,
+          { signal }
         );
 
+        console.log("Quiz session started:", result.session);
         console.log("Questions received from backend:", result.questions);
-
         // Set session ID and questions list
         setSessionId(result.session.id as string);
         setQuestionsList(result.questions);
         setStartTime(new Date());
         setQuestionStartTime(new Date());
-      } catch (error) {
-        console.error("Failed to start quiz session:", error);
-        router.push("/decks");
+      } catch (error: any) {
+        if (error.name !== "AbortError") {
+          console.error("Failed to start quiz session:", error);
+          router.push("/decks");
+        }
       } finally {
         // Set initial loading to false when done
-        setIsInitialLoading(false);
+        if (!signal.aborted) {
+          setIsInitialLoading(false);
+        }
       }
     };
 
@@ -127,6 +136,9 @@ export default function QuizPage(): React.ReactElement {
       // If we already have a sessionId, we're not in initial loading
       setIsInitialLoading(false);
     }
+    return () => {
+      controller.abort();
+    };
   }, [deckId, difficulty, router, sessionId]);
 
   const handleAnswerSelect = (index: number): void => {
@@ -219,8 +231,9 @@ export default function QuizPage(): React.ReactElement {
 
   // Complete the quiz and redirect to results
   const completeQuiz = useCallback(async (): Promise<void> => {
-    if (!sessionId || !startTime || !questionsList) return;
+    if (!sessionId || !startTime || !questionsList || isCompleted) return;
 
+    setIsCompleted(true);
     try {
       // Calculate final stats
       const totalQuestions: number = questionsList.length;
@@ -236,12 +249,13 @@ export default function QuizPage(): React.ReactElement {
       const sessionUpdateData: Partial<QuizSessionUpdate> = {
         end_time: new Date().toISOString(),
         correct_answers: quizResults.correct,
-        total_questions: totalQuestions,
+        total_questions: attemptedCount,
         accuracy,
         time_taken: totalTimeTaken,
         points_earned: quizResults.correct * 10, // Simple scoring
       };
 
+      console.log("Completing quiz session with data:", sessionUpdateData);
       await updateQuizSession(sessionId as UUID, sessionUpdateData);
 
       // Redirect to results page - using the calculated attempted count
@@ -259,61 +273,107 @@ export default function QuizPage(): React.ReactElement {
     totalTimeTaken,
     router,
     currentQuestionIndex,
+    isCompleted,
   ]);
 
   // Handle exit - this combines early exit and normal completion
-  const handleExit = async (): Promise<void> => {
-    if (sessionId && questionsList) {
-      try {
-        // Important: Complete the quiz properly to save progress
-        // For exit, we need to make sure all required fields are included
-        const totalQuestions: number = questionsList.length;
+  const handleExit = useCallback(
+    async (isUnloading: boolean = false): Promise<void> => {
+      if (isCompleted) return;
+      setIsCompleted(true);
 
-        // Use the current question index + 1 for attempted count if an answer was revealed
-        // Otherwise use the quizResults.attempted value
-        const attemptedCount = isAnswerRevealed
-          ? currentQuestionIndex + 1
-          : quizResults.attempted;
+      if (sessionId && questionsList) {
+        try {
+          // Important: Complete the quiz properly to save progress
+          // For exit, we need to make sure all required fields are included
+          const totalQuestions: number = questionsList.length;
 
-        const accuracy: number =
-          attemptedCount > 0 ? quizResults.correct / attemptedCount : 0;
-
-        // Update the session with final results
-        const sessionUpdateData: Partial<QuizSessionUpdate> = {
-          end_time: new Date().toISOString(),
-          correct_answers: quizResults.correct,
-          total_questions: totalQuestions,
-          accuracy,
-          time_taken: totalTimeTaken,
-          points_earned: quizResults.correct * 10, // Simple scoring
-        };
-
-        await updateQuizSession(sessionId as UUID, sessionUpdateData);
-
-        // Redirect to results page with the calculated attempted count
-        router.push(
-          `/quiz/results?sessionId=${sessionId}&attempted=${attemptedCount}&correct=${quizResults.correct}`
-        );
-      } catch (error) {
-        console.error("Error completing quiz on exit:", error);
-        // If there's an error, still redirect to avoid users getting stuck
-        if (quizResults.attempted > 0) {
-          // Use the same logic for attempted count here too
+          // Use the current question index + 1 for attempted count if an answer was revealed
+          // Otherwise use the quizResults.attempted value
           const attemptedCount = isAnswerRevealed
             ? currentQuestionIndex + 1
             : quizResults.attempted;
 
-          router.push(
-            `/quiz/results?sessionId=${sessionId}&attempted=${attemptedCount}&correct=${quizResults.correct}`
+          const accuracy: number =
+            attemptedCount > 0 ? quizResults.correct / attemptedCount : 0;
+
+          // Update the session with final results
+          const sessionUpdateData: Partial<QuizSessionUpdate> = {
+            end_time: new Date().toISOString(),
+            correct_answers: quizResults.correct,
+            total_questions: attemptedCount,
+            accuracy,
+            time_taken: totalTimeTaken,
+            points_earned: quizResults.correct * 10, // Simple scoring
+          };
+
+          console.log(
+            `Exiting quiz session (${
+              isUnloading ? "unload" : "manual"
+            }) with data:`,
+            sessionUpdateData
           );
-        } else {
-          router.push("/decks");
+          await updateQuizSession(
+            sessionId as UUID,
+            sessionUpdateData,
+            { keepalive: isUnloading } // Use keepalive if unloading
+          );
+
+          if (!isUnloading) {
+            // Redirect to results page with the calculated attempted count
+            router.push(
+              `/quiz/results?sessionId=${sessionId}&attempted=${attemptedCount}&correct=${quizResults.correct}`
+            );
+          }
+        } catch (error) {
+          console.error("Error completing quiz on exit:", error);
+          if (!isUnloading) {
+            // If there's an error, still redirect to avoid users getting stuck
+            if (quizResults.attempted > 0) {
+              // Use the same logic for attempted count here too
+              const attemptedCount = isAnswerRevealed
+                ? currentQuestionIndex + 1
+                : quizResults.attempted;
+
+              router.push(
+                `/quiz/results?sessionId=${sessionId}&attempted=${attemptedCount}&correct=${quizResults.correct}`
+              );
+            } else {
+              router.push("/decks");
+            }
+          }
         }
+      } else if (!isUnloading) {
+        router.push("/decks");
       }
-    } else {
-      router.push("/decks");
-    }
-  };
+    },
+    [
+      isCompleted,
+      sessionId,
+      questionsList,
+      quizResults,
+      totalTimeTaken,
+      router,
+      isAnswerRevealed,
+      currentQuestionIndex,
+    ]
+  );
+
+  // Effect to handle saving state when the user leaves the page
+  useEffect(() => {
+    const handleUnload = () => {
+      if (!isCompleted) {
+        handleExit(true);
+      }
+    };
+
+    // 'pagehide' is more reliable than 'beforeunload' for this purpose
+    window.addEventListener("pagehide", handleUnload);
+
+    return () => {
+      window.removeEventListener("pagehide", handleUnload);
+    };
+  }, [isCompleted, handleExit]);
 
   if (isLoading) {
     return (
@@ -452,7 +512,7 @@ export default function QuizPage(): React.ReactElement {
 
       <ExitDialog
         isOpen={showExitDialog}
-        onConfirm={handleExit}
+        onConfirm={() => handleExit(false)}
         onCancel={() => setShowExitDialog(false)}
       />
     </div>
