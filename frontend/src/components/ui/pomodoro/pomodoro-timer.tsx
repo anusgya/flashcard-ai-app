@@ -35,7 +35,6 @@ export function PomodoroTimer() {
   const modeConfig = {
     focus: {
       label: "Focus Time",
-      icon: "🧠",
       gradient: "from-blue-900/20 via-green-900/20 to-orange-900/20",
       bgColor: "bg-primary-orange",
       textColor: "text-primary-orange",
@@ -46,7 +45,6 @@ export function PomodoroTimer() {
     },
     "short-break": {
       label: "Short Break",
-      icon: "☕️",
       gradient: "from-blue-900/20 via-green-900/20 to-orange-900/20",
       bgColor: "bg-primary-green",
       textColor: "text-primary-green",
@@ -56,7 +54,6 @@ export function PomodoroTimer() {
     },
     "long-break": {
       label: "Long Break",
-      icon: "⏲️",
       gradient: "from-blue-900/20 via-green-900/20 to-orange-900/20",
       bgColor: "bg-primary-blue",
       textColor: "text-primary-blue",
@@ -99,15 +96,12 @@ export function PomodoroTimer() {
               {/* Timer Display */}
               <div className="flex items-center gap-6">
                 <motion.div
-                  className={`px-4 py-3 rounded-2xl ${currentConfig.bgColor} border-2 border-divider shadow-lg relative overflow-hidden group`}
+                  className="p-3"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <span className="text-3xl relative z-10">
-                    {currentConfig.icon}
-                  </span>
+                  <span className="text-5xl relative z-10">⏰</span>
                 </motion.div>
 
                 <div className="text-center lg:text-left">

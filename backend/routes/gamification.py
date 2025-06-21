@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, select, union_all
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 from database import get_db
 import schemas
-from models import DailyStreak, Achievement, LeaderboardEntry, User, StudyRecord
+from models import DailyStreak, Achievement, LeaderboardEntry, User, StudySession, QuizSession, StudyRecord
 from auth import get_current_active_user
 
 router = APIRouter(
@@ -15,6 +15,18 @@ router = APIRouter(
     tags=["gamification"],
     responses={404: {"description": "Not found"}}
 )
+
+def get_time_range_start(time_frame: schemas.TimeFrame):
+    """Returns the start datetime for a given TimeFrame."""
+    now = datetime.now(UTC)
+    if time_frame == schemas.TimeFrame.DAILY:
+        return now.replace(hour=0, minute=0, second=0, microsecond=0)
+    if time_frame == schemas.TimeFrame.WEEKLY:
+        return now - timedelta(days=7)
+    if time_frame == schemas.TimeFrame.MONTHLY:
+        return now - timedelta(days=30)
+    # ALLTIME
+    return datetime.min.replace(tzinfo=UTC)
 
 # Get user's streak information
 @router.get("/streaks", response_model=schemas.DailyStreakResponse)
@@ -51,39 +63,130 @@ async def get_leaderboard(
     timeframe: schemas.TimeFrame,
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user)
 ):
-    # Get top users for the specified timeframe
-    leaderboard_entries = db.query(
-        LeaderboardEntry, User.username
+    start_date = get_time_range_start(timeframe)
+
+    # Subquery for study points per user within the timeframe
+    study_points_sq = select(
+        StudySession.user_id,
+        func.sum(StudySession.points_earned).label("points")
+    ).where(
+        StudySession.start_time >= start_date,
+        StudySession.points_earned.isnot(None)
+    ).group_by(StudySession.user_id).subquery()
+
+    # Subquery for quiz points per user within the timeframe
+    quiz_points_sq = select(
+        QuizSession.user_id,
+        func.sum(QuizSession.points_earned).label("points")
+    ).where(
+        QuizSession.start_time >= start_date,
+        QuizSession.points_earned.isnot(None)
+    ).group_by(QuizSession.user_id).subquery()
+
+    # Union the points from both sources
+    all_points_sq = union_all(
+        select(study_points_sq.c.user_id, study_points_sq.c.points),
+        select(quiz_points_sq.c.user_id, quiz_points_sq.c.points)
+    ).alias("all_points")
+
+    # Group by user to get total points for active users
+    total_points_sq = select(
+        all_points_sq.c.user_id,
+        func.sum(all_points_sq.c.points).label("total_points")
+    ).group_by(all_points_sq.c.user_id).subquery()
+
+    # Subquery to ensure all users are included, with 0 points if inactive
+    all_users_points_sq = select(
+        User.id.label("user_id"),
+        User.username,
+        func.coalesce(total_points_sq.c.total_points, 0).label("total_points"),
+        func.coalesce(DailyStreak.current_streak, 0).label("streak")
+    ).select_from(User).outerjoin(
+        total_points_sq, User.id == total_points_sq.c.user_id
+    ).outerjoin(
+        DailyStreak, User.id == DailyStreak.user_id
+    ).subquery()
+
+    # Use row_number to give a unique rank, with streak and username as tie-breakers
+    ranked_users_sq = select(
+        all_users_points_sq.c.user_id,
+        all_users_points_sq.c.total_points,
+        func.row_number().over(
+            order_by=[
+                desc(all_users_points_sq.c.total_points),
+                desc(all_users_points_sq.c.streak),
+                all_users_points_sq.c.username.asc()
+            ]
+        ).label("rank")
+    ).subquery()
+
+    # Query for the top N users
+    leaderboard_results = db.query(
+        ranked_users_sq.c.user_id,
+        ranked_users_sq.c.rank,
+        ranked_users_sq.c.total_points,
+        User.username,
+        User.avatar,
+        DailyStreak.current_streak
     ).join(
-        User
-    ).filter(
-        LeaderboardEntry.timeframe == timeframe
+        User, ranked_users_sq.c.user_id == User.id
+    ).outerjoin(
+        DailyStreak, User.id == DailyStreak.user_id
     ).order_by(
-        LeaderboardEntry.rank
+        ranked_users_sq.c.rank
     ).limit(limit).all()
-    
-    # Get current user's rank
-    user_entry = db.query(LeaderboardEntry).filter(
-        LeaderboardEntry.user_id == current_user.id,
-        LeaderboardEntry.timeframe == timeframe
-    ).first()
-    
-    user_rank = user_entry.rank if user_entry else None
-    
-    # Format response
+
+    # Format the main leaderboard entries
     entries = []
-    for entry, username in leaderboard_entries:
-        entry_dict = schemas.LeaderboardEntryResponse.from_orm(entry).dict()
-        entry_dict["username"] = username
-        entries.append(schemas.LeaderboardEntryResponse(**entry_dict))
-    
-    return {
-        "timeframe": timeframe,
-        "entries": entries,
-        "user_rank": user_rank
-    }
+    for user_id, rank, total_points, username, avatar, streak in leaderboard_results:
+        entries.append(schemas.LeaderboardEntryResponse(
+            user_id=user_id,
+            rank=rank,
+            total_points=total_points,
+            username=username,
+            avatar=f"/media/avatars/{avatar}" if avatar else None,
+            streak=streak or 0,
+            # Placeholder values for fields not calculated in this query
+            id=user_id, # Using user_id as a placeholder for id
+            calculated_at=datetime.now(UTC),
+            timeframe=timeframe,
+            quiz_points=0,
+            study_points=0,
+            achievement_points=0,
+            streak_points=0,
+            rank_change="same"
+        ))
+
+    # Get current user's detailed rank information
+    user_rank_details = None
+    user_rank_query = db.query(
+        ranked_users_sq.c.rank,
+        ranked_users_sq.c.total_points
+    ).filter(ranked_users_sq.c.user_id == current_user.id).first()
+
+    if user_rank_query:
+        user_rank, user_points = user_rank_query
+        points_to_next = None
+        if user_rank > 1:
+            next_rank_points = db.query(ranked_users_sq.c.total_points).filter(
+                ranked_users_sq.c.rank == user_rank - 1
+            ).scalar()
+            if next_rank_points is not None:
+                points_to_next = next_rank_points - user_points
+        
+        user_rank_details = schemas.UserRankDetail(
+            rank=user_rank,
+            points_to_next_rank=points_to_next,
+            rank_change="same"
+        )
+
+    return schemas.LeaderboardResponse(
+        timeframe=timeframe,
+        entries=entries,
+        user_rank_details=user_rank_details
+    )
 
 # Get user's gamification summary
 @router.get("/summary", response_model=schemas.UserGamificationSummary)

@@ -1,4 +1,5 @@
 from pydantic import BaseModel, UUID4, Field, Json
+from uuid import UUID
 from typing import List, Optional, Dict, Any, Union
 from enums import Enum
 from datetime import datetime
@@ -64,13 +65,22 @@ class LeaderboardEntryCreate(LeaderboardEntryBase):
     user_id: UUID4
 
 class LeaderboardEntryResponse(LeaderboardEntryBase):
-    id: UUID4
-    user_id: UUID4
+    id: UUID
+    user_id: UUID
     calculated_at: datetime
     username: Optional[str] = None  # This can be populated when joining with User data
+    avatar: Optional[str] = None
+    streak: Optional[int] = None
+    rank_change: Optional[str] = "same"
     
     class Config:
         orm_mode = True
+
+# Details for the current user's rank
+class UserRankDetail(BaseModel):
+    rank: Optional[int] = None
+    points_to_next_rank: Optional[int] = None
+    rank_change: Optional[str] = "same"
 
 # User gamification summary
 class UserGamificationSummary(BaseModel):
@@ -87,4 +97,4 @@ class UserGamificationSummary(BaseModel):
 class LeaderboardResponse(BaseModel):
     timeframe: TimeFrame
     entries: List[LeaderboardEntryResponse]
-    user_rank: Optional[int] = None  # The current user's rank
+    user_rank_details: Optional[UserRankDetail] = None  # The current user's rank details

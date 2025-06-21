@@ -29,7 +29,7 @@ from schemas.quiz import (
 )
 from schemas.gamification import (
     DailyStreakBase, DailyStreakResponse, 
-    AchievementBase, AchievementCreate, AchievementResponse,
+    AchievementBase, AchievementCreate, AchievementResponse, UserRankDetail,
     LeaderboardEntryBase, LeaderboardEntryCreate, LeaderboardEntryResponse,
     LeaderboardResponse, UserGamificationSummary,
     AchievementType, TimeFrame
