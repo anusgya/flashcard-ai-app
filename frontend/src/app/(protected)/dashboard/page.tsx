@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRecentDecks } from "@/hooks/api/use-deck"; // Import the hook
 import useMe from "@/hooks/api/use-me";
 import { PomodoroTimer } from "@/components/ui/pomodoro/pomodoro-timer";
+import { useStreak } from "@/hooks/api/useGamification";
 
 interface DeckCardProps {
   id: string;
@@ -31,8 +32,8 @@ export interface me {
 export default function Dashboard() {
   // Use the hook to fetch recent decks
   const { recentDecks, isLoading, isError } = useRecentDecks();
-  console.log("recent deck", recentDecks);
   const { user, isLoading: userLoading, isError: userError } = useMe();
+  const { streak, isLoading: isStreakLoading } = useStreak();
 
   console.log("user", user);
 
@@ -93,7 +94,7 @@ export default function Dashboard() {
             >
               🔥
             </motion.span>
-            <span>7</span>
+            <span>{isStreakLoading ? "..." : streak?.current_streak ?? 0}</span>
           </div>
 
           <span className="text-secondary-foreground text-sm font-fragment-mono">

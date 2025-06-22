@@ -69,29 +69,31 @@ async def get_public_decks(
     limit: int = Query(100, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
-    # Query public decks with card count
+    # Query public decks with card count and user details
     query = db.query(
         Deck, 
         func.count(Card.id).label("card_count"),
-        User.username.label("username")
+        User.username.label("username"),
+        User.avatar.label("avatar")
     ).outerjoin(
         Card
     ).join(
-        User
+        User, Deck.user_id == User.id
     ).filter(
         Deck.is_public == True
     ).group_by(
-        Deck.id, User.username
+        Deck.id, User.username, User.avatar
     ).offset(skip).limit(limit)
     
     results = query.all()
     
-    # Format response with card count
+    # Format response with card count and creator details
     response = []
-    for deck, card_count, username in results:
+    for deck, card_count, username, avatar in results:
         deck_dict = schemas.DeckResponse.from_orm(deck).dict()
-        deck_dict["card_count"] = card_count
+        deck_dict["total_cards"] = card_count
         deck_dict["creator_username"] = username
+        deck_dict["creator_avatar"] = f"/media/avatars/{avatar}" if avatar else None
         response.append(schemas.DeckResponse(**deck_dict))
     
     return response
@@ -120,7 +122,7 @@ async def get_deck(
     
     # Format response
     deck_dict = schemas.DeckDetailResponse.from_orm(deck).dict()
-    deck_dict["card_count"] = card_count
+    deck_dict["total_cards"] = card_count
     
     return schemas.DeckDetailResponse(**deck_dict)
 

@@ -61,3 +61,39 @@ class ExplanationRequest(BaseModel):
 class ExampleRequest(BaseModel):
     card_id: UUID4
     count: int = Field(3, ge=1, le=5)
+
+
+# --- Comment Schemas ---
+
+class CommentAuthor(BaseModel):
+    id: UUID4
+    username: str
+    avatar: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class CommentBase(BaseModel):
+    content: str = Field(..., min_length=1, max_length=1000)
+
+class CommentCreate(CommentBase):
+    deck_id: UUID4
+    parent_comment_id: Optional[UUID4] = None
+
+class CommentUpdate(CommentBase):
+    pass
+
+class CommentResponse(CommentBase):
+    id: UUID4
+    deck_id: UUID4
+    parent_comment_id: Optional[UUID4] = None
+    created_at: datetime
+    updated_at: datetime
+    author: CommentAuthor
+    replies: List['CommentResponse'] = [] # For threaded comments
+
+    class Config:
+        from_attributes = True
+
+# Allow the self-referencing 'replies' field to be resolved
+CommentResponse.model_rebuild()

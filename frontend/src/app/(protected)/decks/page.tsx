@@ -1,37 +1,37 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Search } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { DeckListItem } from "@/components/ui/deck-list-item"
-import { CreateDeckModal } from "@/components/ui/create-deck-modal"
-import { UploadModal } from "@/components/ui/upload-modal"
-import { ImportModal } from "@/components/ui/import-modal"
-import { useDecks } from "@/hooks/api/use-deck"
-import { useDueCards, updateCardStates } from "@/hooks/api/useStudy" // Import updateCardStates function
-import { Skeleton } from "@/components/ui/skeleton"
-import { motion } from "framer-motion"
-import { useCards } from "@/hooks/api/use-card"
-import { Filter } from "lucide-react"
-import { ArrowUpDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { 
+import { useState, useEffect } from "react";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { DeckListItem } from "@/components/ui/deck-list-item";
+import { CreateDeckModal } from "@/components/ui/create-deck-modal";
+import { UploadModal } from "@/components/ui/upload-modal";
+import { ImportModal } from "@/components/ui/import-modal";
+import { useDecks } from "@/hooks/api/use-deck";
+import { useDueCards, updateCardStates } from "@/hooks/api/useStudy"; // Import updateCardStates function
+import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
+import { useCards } from "@/hooks/api/use-card";
+import { Filter } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
 // Define types for the deck data
 interface Deck {
-  id: string
-  name: string
-  description: string
-  card_count?: number
-  is_public?: boolean
-  source_type?: string
-  created_at?: string
-  updated_at?: string
+  id: string;
+  name: string;
+  description: string;
+  card_count?: number;
+  is_public?: boolean;
+  source_type?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Define interface for card counts
@@ -41,7 +41,7 @@ interface DeckCardCounts {
     dueCount: number;
     learnCount: number;
     isLoading: boolean;
-  }
+  };
 }
 
 // Define sort options
@@ -52,27 +52,27 @@ type SortOption = {
 };
 
 export default function DecksPage() {
-  const { decks, isLoading, isError, mutate } = useDecks()
-  console.log("decks", decks)
+  const { decks, isLoading, isError, mutate } = useDecks();
+  console.log("decks", decks);
   // State to track card counts for all decks
-  const [deckCardCounts, setDeckCardCounts] = useState<DeckCardCounts>({})
-  const [isUpdatingCardStates, setIsUpdatingCardStates] = useState(false)
+  const [deckCardCounts, setDeckCardCounts] = useState<DeckCardCounts>({});
+  const [isUpdatingCardStates, setIsUpdatingCardStates] = useState(false);
   // Add search state
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState("");
   // Add sort state - changed default from "name-asc" to "created-desc"
-  const [sortOption, setSortOption] = useState<string>("created-desc")
+  const [sortOption, setSortOption] = useState<string>("created-desc");
 
   // Define sort options
   const sortOptions: SortOption[] = [
     {
       label: "Name (A-Z)",
       value: "name-asc",
-      compareFn: (a: Deck, b: Deck) => a.name.localeCompare(b.name)
+      compareFn: (a: Deck, b: Deck) => a.name.localeCompare(b.name),
     },
     {
       label: "Name (Z-A)",
       value: "name-desc",
-      compareFn: (a: Deck, b: Deck) => b.name.localeCompare(a.name)
+      compareFn: (a: Deck, b: Deck) => b.name.localeCompare(a.name),
     },
     {
       label: "Newest First",
@@ -81,7 +81,7 @@ export default function DecksPage() {
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
         const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
         return dateB - dateA;
-      }
+      },
     },
     {
       label: "Oldest First",
@@ -90,7 +90,7 @@ export default function DecksPage() {
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
         const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
         return dateA - dateB;
-      }
+      },
     },
     {
       label: "Last Updated",
@@ -99,7 +99,7 @@ export default function DecksPage() {
         const dateA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
         const dateB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
         return dateB - dateA;
-      }
+      },
     },
     {
       label: "Card Count (High to Low)",
@@ -108,7 +108,7 @@ export default function DecksPage() {
         const countA = a.card_count || 0;
         const countB = b.card_count || 0;
         return countB - countA;
-      }
+      },
     },
     {
       label: "Card Count (Low to High)",
@@ -117,53 +117,53 @@ export default function DecksPage() {
         const countA = a.card_count || 0;
         const countB = b.card_count || 0;
         return countA - countB;
-      }
+      },
     },
   ];
 
   // Update all card states when the page loads
   useEffect(() => {
     async function updateAllDeckCardStates() {
-      if (!decks || decks.length === 0) return
+      if (!decks || decks.length === 0) return;
 
-      setIsUpdatingCardStates(true)
+      setIsUpdatingCardStates(true);
       try {
         // Update all card states (no specific deck ID)
-        await updateCardStates()
+        await updateCardStates();
 
         // Log for debugging
-        console.log("Successfully updated all card states")
+        console.log("Successfully updated all card states");
       } catch (error) {
-        console.error("Failed to update card states:", error)
+        console.error("Failed to update card states:", error);
       } finally {
-        setIsUpdatingCardStates(false)
+        setIsUpdatingCardStates(false);
       }
     }
 
-    updateAllDeckCardStates()
-  }, [decks]) // Run when decks change
+    updateAllDeckCardStates();
+  }, [decks]); // Run when decks change
 
   // Load card counts for each deck when the decks list changes
   useEffect(() => {
     if (decks && decks.length > 0) {
       // Initialize counts with loading state
-      const initialCounts: DeckCardCounts = {}
+      const initialCounts: DeckCardCounts = {};
       decks.forEach((deck: Deck) => {
         initialCounts[deck.id] = {
           newCount: 0,
           dueCount: 0,
           learnCount: 0,
-          isLoading: true
-        }
-      })
-      setDeckCardCounts(initialCounts)
+          isLoading: true,
+        };
+      });
+      setDeckCardCounts(initialCounts);
     }
-  }, [decks])
+  }, [decks]);
 
   // Filter decks based on search query
   const filteredDecks = decks?.filter((deck: Deck) => {
     if (!searchQuery.trim()) return true;
-    
+
     const query = searchQuery.toLowerCase();
     return (
       deck.name.toLowerCase().includes(query) ||
@@ -172,10 +172,12 @@ export default function DecksPage() {
   });
 
   // Sort the filtered decks
-  const sortedDecks = filteredDecks ? [...filteredDecks].sort(
-    sortOptions.find(option => option.value === sortOption)?.compareFn ||
-    sortOptions[0].compareFn
-  ) : [];
+  const sortedDecks = filteredDecks
+    ? [...filteredDecks].sort(
+        sortOptions.find((option) => option.value === sortOption)?.compareFn ||
+          sortOptions[0].compareFn
+      )
+    : [];
 
   return (
     <motion.div
@@ -193,13 +195,15 @@ export default function DecksPage() {
       >
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-foreground">All decks</h1>
-          <p className="text-secondary-foreground font-fragment-mono text-sm">All your card collections are here</p>
+          <p className="text-secondary-foreground font-fragment-mono text-sm">
+            All your card collections are here
+          </p>
         </div>
         <div className="relative w-80 border-0 bg-secondary">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-secondary-foreground" />
-          <Input 
-            className="py-[5px] pl-10 placeholder:text-secondary-foreground border-border" 
-            placeholder="Search" 
+          <Input
+            className="py-[5px] pl-10 placeholder:text-secondary-foreground border-border"
+            placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -224,7 +228,8 @@ export default function DecksPage() {
                 className="text-secondary-foreground border-b-1 bg-secondary border-divider hover:text-foreground"
               >
                 <ArrowUpDown className="h-4 w-4 mr-2" />
-                {sortOptions.find(option => option.value === sortOption)?.label || "Sort"}
+                {sortOptions.find((option) => option.value === sortOption)
+                  ?.label || "Sort"}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -232,7 +237,11 @@ export default function DecksPage() {
                 <DropdownMenuItem
                   key={option.value}
                   onClick={() => setSortOption(option.value)}
-                  className={sortOption === option.value ? "bg-secondary font-medium" : ""}
+                  className={
+                    sortOption === option.value
+                      ? "bg-secondary font-medium"
+                      : ""
+                  }
                 >
                   {option.label}
                 </DropdownMenuItem>
@@ -275,10 +284,10 @@ export default function DecksPage() {
           ) : sortedDecks && sortedDecks.length > 0 ? (
             // Show filtered decks with staggered animations
             sortedDecks.map((deck: Deck, index: number) => (
-              <DeckCardCountFetcher 
-                key={deck.id} 
-                deck={deck} 
-                index={index} 
+              <DeckCardCountFetcher
+                key={deck.id}
+                deck={deck}
+                index={index}
                 deckCardCounts={deckCardCounts}
                 setDeckCardCounts={setDeckCardCounts}
                 onDeckEdit={() => mutate()}
@@ -293,7 +302,7 @@ export default function DecksPage() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              {decks && decks.length > 0 
+              {decks && decks.length > 0
                 ? `No decks found matching "${searchQuery}"`
                 : "No decks found. Create your first deck to get started!"}
             </motion.div>
@@ -301,19 +310,19 @@ export default function DecksPage() {
         </motion.div>
       </div>
     </motion.div>
-  )
+  );
 }
 
 // Component to fetch card counts for each deck
-function DeckCardCountFetcher({ 
-  deck, 
-  index, 
+function DeckCardCountFetcher({
+  deck,
+  index,
   deckCardCounts,
   setDeckCardCounts,
   onDeckEdit,
-  onDeckDelete
-}: { 
-  deck: Deck; 
+  onDeckDelete,
+}: {
+  deck: Deck;
   index: number;
   deckCardCounts: DeckCardCounts;
   setDeckCardCounts: React.Dispatch<React.SetStateAction<DeckCardCounts>>;
@@ -321,47 +330,52 @@ function DeckCardCountFetcher({
   onDeckDelete: () => void;
 }) {
   // Handle TypeScript UUID type issues with type assertion
-  const { dueCards, isLoading, isError, mutate: refreshDueCards } = useDueCards(deck.id as any)
+  const {
+    dueCards,
+    isLoading,
+    isError,
+    mutate: refreshDueCards,
+  } = useDueCards(deck.id as any);
 
   // Update card counts when dueCards data changes
   useEffect(() => {
     if (!isLoading && dueCards) {
-      setDeckCardCounts(prev => ({
+      setDeckCardCounts((prev) => ({
         ...prev,
         [deck.id]: {
           newCount: dueCards.new_cards || 0,
           // Due now includes both learning and review cards that are currently due
           dueCount: dueCards.due_now || 0,
           learnCount: dueCards.learning_cards || 0,
-          isLoading: false
-        }
-      }))
+          isLoading: false,
+        },
+      }));
     }
-  }, [deck.id, dueCards, isLoading, setDeckCardCounts])
+  }, [deck.id, dueCards, isLoading, setDeckCardCounts]);
 
   // Function to update a specific deck's card states
   const updateDeckCardStates = async () => {
     try {
       // Update card states for this specific deck
-      await updateCardStates(deck.id as any)
+      await updateCardStates(deck.id as any);
       // Refresh the due cards data
-      refreshDueCards()
+      refreshDueCards();
     } catch (error) {
-      console.error(`Failed to update card states for deck ${deck.id}:`, error)
+      console.error(`Failed to update card states for deck ${deck.id}:`, error);
     }
-  }
+  };
 
   // Update card states for this deck on component mount
   useEffect(() => {
-    updateDeckCardStates()
+    updateDeckCardStates();
 
     // Set up an interval to update states every 5 minutes (300000ms)
     // This is especially useful for cards that become due during a long session
-    const intervalId = setInterval(updateDeckCardStates, 300000)
-    
+    const intervalId = setInterval(updateDeckCardStates, 300000);
+
     // Clean up interval on component unmount
-    return () => clearInterval(intervalId)
-  }, [deck.id])
+    return () => clearInterval(intervalId);
+  }, [deck.id]);
 
   return (
     <motion.div
@@ -379,7 +393,8 @@ function DeckCardCountFetcher({
         id={deck.id}
         OnDeckEdit={onDeckEdit}
         OnDeckDelete={onDeckDelete}
+        is_public={deck.is_public || false}
       />
     </motion.div>
-  )
+  );
 }

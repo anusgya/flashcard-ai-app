@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +32,7 @@ export function FloatingPomodoro() {
   } = usePomodoro();
 
   const [isExpanded, setIsExpanded] = useState(false);
+  const constraintsRef = useRef(null);
 
   const getDurationForCurrentMode = () => {
     switch (currentMode) {
@@ -76,80 +77,85 @@ export function FloatingPomodoro() {
   const progress = getProgress();
   const modeConfig = getModeConfig();
 
-  if (!shouldShow) return null;
-
   return (
     <>
-      <AnimatePresence>
-        <motion.div
-          className="fixed bottom-6 right-6 z-50"
-          initial={{ opacity: 0, scale: 0.8, y: 100 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.8, y: 100 }}
-          transition={{
-            duration: 0.3,
-            type: "spring",
-            stiffness: 300,
-            damping: 30,
-          }}
-        >
-          <div className="relative">
-            {/* Enhanced background gradient blur */}
-            <div
-              className={`absolute inset-0 bg-gradient-to-br ${modeConfig.color} blur-xl opacity-60 rounded-2xl`}
-            ></div>
+      <div ref={constraintsRef} className="fixed inset-0 pointer-events-none" />
+      <motion.div
+        className="fixed bottom-6 right-6 z-50 cursor-grab"
+        drag
+        dragConstraints={constraintsRef}
+        dragMomentum={false}
+        whileTap={{ cursor: "grabbing" }}
+        initial={{ opacity: 0, scale: 0.8, y: 100 }}
+        animate={
+          shouldShow
+            ? { opacity: 1, scale: 1, y: 0, pointerEvents: "auto" }
+            : { opacity: 0, scale: 0.8, y: 100, pointerEvents: "none" }
+        }
+        transition={{
+          duration: 0.3,
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
+        }}
+      >
+        <div className="relative">
+          {/* Enhanced background gradient blur */}
+          <div
+            className={`absolute inset-0 bg-gradient-to-br ${modeConfig.color} blur-xl opacity-60 rounded-2xl`}
+          ></div>
 
-            <motion.div
-              className="relative bg-background backdrop-blur-md border border-border border-dashed rounded-2xl  overflow-hidden"
-              animate={{
-                width: isExpanded ? 320 : 150,
-                height: isExpanded ? 300 : 60,
-              }}
-              transition={{
-                duration: 0.3,
-                type: "spring",
-                stiffness: 300,
-                damping: 30,
-              }}
-            >
-              {/* Enhanced progress bar */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-muted dark:bg-gray-700">
-                <motion.div
-                  className={`h-full ${modeConfig.bgColor} shadow-sm`}
-                  style={{ width: `${progress}%` }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.3 }}
-                />
-              </div>
+          <motion.div
+            className="relative bg-background backdrop-blur-md border border-border border-dotted rounded-lg  overflow-hidden"
+            animate={{
+              width: isExpanded ? 320 : 150,
+              height: isExpanded ? 300 : 60,
+            }}
+            transition={{
+              duration: 0.3,
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+            }}
+          >
+            {/* Enhanced progress bar */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-muted dark:bg-gray-700">
+              <motion.div
+                className={`h-full ${modeConfig.bgColor} shadow-sm`}
+                style={{ width: `${progress}%` }}
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
 
-              {/* Compact view */}
-              {!isExpanded && (
-                <div className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-3 h-3 rounded-full ${modeConfig.bgColor} ${
-                        isActive ? "animate-pulse" : ""
-                      } shadow-sm`}
-                    />
-                    <span className="font-mono font-bold text-lg text-secondary-foreground">
-                      {formatTime(timeLeft)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={toggleTimer}
-                      className="h-8 w-8 p-0 hover:bg-muted rounded-full"
-                    >
-                      {isActive ? (
-                        <Pause className="h-4 w-4" />
-                      ) : (
-                        <Play className="h-4 w-4" />
-                      )}
-                    </Button>
-                    {/* <Button
+            {/* Compact view */}
+            {!isExpanded && (
+              <div className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-3 h-3 rounded-full ${modeConfig.bgColor} ${
+                      isActive ? "animate-pulse" : ""
+                    } shadow-sm`}
+                  />
+                  <span className="font-mono font-bold text-lg text-secondary-foreground">
+                    {formatTime(timeLeft)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={toggleTimer}
+                    className="h-8 w-8 p-0 hover:bg-secondary rounded-full"
+                  >
+                    {isActive ? (
+                      <Pause className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
+                  </Button>
+                  {/* <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => setIsExpanded(true)}
@@ -157,12 +163,12 @@ export function FloatingPomodoro() {
                     >
                       <Maximize2 className="h-4 w-4" />
                     </Button> */}
-                  </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Expanded view */}
-              {/* {isExpanded && (
+            {/* Expanded view */}
+            {/* {isExpanded && (
                 <div className="p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className={`font-semibold ${modeConfig.textColor}`}>
@@ -266,10 +272,9 @@ export function FloatingPomodoro() {
                   </div>
                 </div>
               )} */}
-            </motion.div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
+          </motion.div>
+        </div>
+      </motion.div>
 
       <PomodoroDialog
         open={isDialogOpen}

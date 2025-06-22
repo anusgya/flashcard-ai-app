@@ -16,7 +16,9 @@ from schemas.analytics import (
     QuizVsStudyPoint,
     PointsDataPoint,
     RankingData,
-    DifficultCard
+    DifficultCard,
+    ActivityDayResponse,
+    ActivityData
 )
 from models import StudySession, QuizSession, StudyRecord, QuizAnswer, Card, DailyStreak, User, Deck
 from auth import get_current_active_user
@@ -342,3 +344,95 @@ def get_analytics_dashboard(
         rankingData=ranking_data,
         sessionFrequency=session_frequency
     )
+
+@router.get("/activity-heatmap", response_model=List[ActivityDayResponse])
+def get_activity_heatmap(
+    year: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    start_of_year = datetime(year, 1, 1, tzinfo=UTC)
+    end_of_year = datetime(year, 12, 31, 23, 59, 59, tzinfo=UTC)
+
+    # Query for study-related activities for the entire year
+    study_activities = db.query(
+        func.date(StudyRecord.studied_at).label("date"),
+        func.count(StudyRecord.id).label("cards"),
+        func.sum(StudyRecord.time_taken).label("time"),
+        func.count(func.distinct(StudyRecord.session_id)).label("sessions")
+    ).join(StudySession).filter(
+        StudySession.user_id == current_user.id,
+        StudyRecord.studied_at.between(start_of_year, end_of_year)
+    ).group_by(func.date(StudyRecord.studied_at)).all()
+
+    # Query for quiz sessions for the entire year
+    quiz_activities = db.query(
+        func.date(QuizSession.start_time).label("date"),
+        func.count(QuizSession.id).label("quizzes")
+    ).filter(
+        QuizSession.user_id == current_user.id,
+        QuizSession.start_time.between(start_of_year, end_of_year)
+    ).group_by(func.date(QuizSession.start_time)).all()
+
+    # Process activities into a dictionary for easy lookup
+    activity_map = {}
+    for activity in study_activities:
+        activity_map[activity.date] = {
+            "cards_studied": activity.cards,
+            "time_spent_minutes": round(activity.time / 60) if activity.time else 0,
+            "study_sessions": activity.sessions,
+            "quiz_sessions": 0
+        }
+    
+    for activity in quiz_activities:
+        if activity.date in activity_map:
+            activity_map[activity.date]["quiz_sessions"] = activity.quizzes
+        else:
+            activity_map[activity.date] = {
+                "cards_studied": 0,
+                "time_spent_minutes": 0,
+                "study_sessions": 0,
+                "quiz_sessions": activity.quizzes
+            }
+            
+    # Define intensity levels based on cards studied
+    def get_intensity(cards_studied: int) -> int:
+        if cards_studied == 0:
+            return 0
+        if 1 <= cards_studied <= 10:
+            return 1
+        if 11 <= cards_studied <= 25:
+            return 2
+        if 26 <= cards_studied <= 50:
+            return 3
+        return 4 # 51+ cards
+
+    # Build the full year response
+    response = []
+    current_day = start_of_year
+    while current_day.year == year:
+        day_str = current_day.strftime("%Y-%m-%d")
+        day_date = current_day.date()
+        
+        if day_date in activity_map:
+            activities = activity_map[day_date]
+            response.append(ActivityDayResponse(
+                date=day_str,
+                intensity=get_intensity(activities["cards_studied"]),
+                activities=ActivityData(**activities)
+            ))
+        else:
+            # Day with no activity
+            response.append(ActivityDayResponse(
+                date=day_str,
+                intensity=0,
+                activities=ActivityData(
+                    cards_studied=0,
+                    time_spent_minutes=0,
+                    study_sessions=0,
+                    quiz_sessions=0
+                )
+            ))
+        current_day += timedelta(days=1)
+        
+    return response

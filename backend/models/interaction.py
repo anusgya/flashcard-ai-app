@@ -34,3 +34,27 @@ class LLMResponse(Base):
     
     # Relationships
     card = relationship("Card", back_populates="llm_responses")
+
+
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    content = Column(String, nullable=False)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # --- Relationships ---
+    deck_id = Column(UUID(as_uuid=True), ForeignKey("decks.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    
+    # For threaded replies
+    parent_comment_id = Column(UUID(as_uuid=True), ForeignKey("comments.id", ondelete="CASCADE"), nullable=True)
+
+    # Define the relationships for SQLAlchemy
+    deck = relationship("Deck")
+    author = relationship("User")
+    
+    # Self-referencing relationship for replies
+    parent = relationship("Comment", remote_side=[id], backref="replies", passive_deletes=True)

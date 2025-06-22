@@ -31,6 +31,7 @@ const navItems: NavItem[] = [
   { icon: "🔍", label: "Analytics", href: "/analytics" },
   // { icon: "🏆", label: "Achievements", href: "/achievements" },
   { icon: "👑", label: "Leaderboard", href: "/leaderboard" },
+  { icon: "📚", label: "Collaborative Learning", href: "/collaborative" },
   { icon: "⚙️", label: "Settings", href: "/settings" },
 ];
 

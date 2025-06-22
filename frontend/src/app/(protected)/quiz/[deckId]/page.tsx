@@ -392,7 +392,7 @@ export default function QuizPage(): React.ReactElement {
             </div>
           </div>
 
-          <p className="text-secondary-foreground">
+          <p className="text-secondary-foreground font-fragment-mono">
             Loading questions with AI-powered options
           </p>
         </div>
@@ -478,7 +478,7 @@ export default function QuizPage(): React.ReactElement {
         <Button
           onClick={() => setShowExitDialog(true)}
           variant="outline"
-          className="font-semibold border-b- px-4 py-2 text-md h-auto  hover:shadow-xl transition-all"
+          className="font-semibold border-b- px-4 py-2 font-fragment-mono h-auto  hover:shadow-xl transition-all"
         >
           Exit Quiz
         </Button>
@@ -486,7 +486,7 @@ export default function QuizPage(): React.ReactElement {
           onClick={isAnswerRevealed ? handleContinue : handleCheck}
           disabled={selectedAnswer === null && !isAnswerRevealed}
           style={{ backgroundColor: currentColor, borderColor: currentColor }}
-          className="text-background font-semibold px-4 py-2 text-md h-auto shadow-lg hover:shadow-xl transition-all"
+          className="text-background font-semibold px-4 py-2 font-fragment-mono h-auto shadow-lg transition-all"
         >
           {isAnswerRevealed
             ? currentQuestionIndex < questionsList.length - 1

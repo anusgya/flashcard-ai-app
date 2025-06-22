@@ -3,6 +3,9 @@ from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from schemas.base import BaseResponse
 from enums import TimeRange
+from models import StudySession, QuizSession, StudyRecord, QuizAnswer, Card, DailyStreak, User, Deck
+from auth import get_current_active_user
+from fastapi import APIRouter
 
 class SessionFrequency(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -74,3 +77,19 @@ class AnalyticsDashboardResponse(BaseResponse):
     pointsData: List[PointsDataPoint]
     rankingData: RankingData
     sessionFrequency: SessionFrequencyData
+
+class ActivityData(BaseModel):
+    cards_studied: int
+    time_spent_minutes: int
+    study_sessions: int
+    quiz_sessions: int
+
+class ActivityDayResponse(BaseModel):
+    date: str
+    intensity: int
+    activities: ActivityData
+
+router = APIRouter(
+    prefix="/api/analytics",
+    tags=["analytics"],
+)

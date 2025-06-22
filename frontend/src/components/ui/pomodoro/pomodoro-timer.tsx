@@ -2,15 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import {
-  Play,
-  Pause,
-  RotateCcw,
-  Coffee,
-  Brain,
-  Timer,
-  Settings,
-} from "lucide-react";
+import { Play, Pause, RotateCcw, Settings } from "lucide-react";
 import { usePomodoro } from "@/hooks/use-pomodoro";
 import { PomodoroDialog } from "@/components/ui/pomodoro/pomodoro-dialog";
 import { Separator } from "@/components/ui/separator";
@@ -35,31 +27,28 @@ export function PomodoroTimer() {
   const modeConfig = {
     focus: {
       label: "Focus Time",
-      gradient: "from-blue-900/20 via-green-900/20 to-orange-900/20",
+      gradient: "from-primary-green/20 via-primary-green/5 to-transparent",
       bgColor: "bg-primary-orange",
       textColor: "text-primary-orange",
       borderColor:
         "border-primary-orange-secondary dark:border-primary-orange/30",
       buttonBg: "bg-primary-orange hover:border-0",
-      accentColor: "bg-orange-500/10",
     },
     "short-break": {
       label: "Short Break",
-      gradient: "from-blue-900/20 via-green-900/20 to-orange-900/20",
+      gradient: "from-primary-green/20 via-primary-green/5 to-transparent",
       bgColor: "bg-primary-green",
       textColor: "text-primary-green",
       borderColor: "border-divider dark:border-primary-green/30",
       buttonBg: "bg-primary-green hover:border-0",
-      accentColor: "bg-green-500/10",
     },
     "long-break": {
       label: "Long Break",
-      gradient: "from-blue-900/20 via-green-900/20 to-orange-900/20",
+      gradient: "from-primary-green/20 via-primary-green/5 to-transparent",
       bgColor: "bg-primary-blue",
       textColor: "text-primary-blue",
       borderColor: "border-primary-blue-secondary",
       buttonBg: "bg-primary-blue hover:border-0",
-      accentColor: "bg-blue-500/10",
     },
   };
 
@@ -69,26 +58,26 @@ export function PomodoroTimer() {
   return (
     <>
       <motion.div
-        className="w-full relative overflow-hidden rounded-3xl"
+        className="w-full relative overflow-hidden rounded-2xl"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         {/* Enhanced background gradient - from leaderboard */}
         <div
-          className={`absolute inset-0 bg-gradient-to-r ${currentConfig.gradient} blur-xl opacity-50`}
+          className={`absolute inset-0 bg-gradient-to-b ${currentConfig.gradient} blur-xl opacity-50`}
         ></div>
 
         <div
-          className={`relative rounded-3xl border-[1.5px] border-border bg-background/80 backdrop-blur-md py-3 px-8 transition-all duration-500 shadow-lg hover:shadow-xl`}
+          className={`relative rounded-2xl border-2  border-border bg-background/80 backdrop-blur-md py-3 px-8 transition-all duration-500 shadow-lg hover:shadow-xl`}
         >
           {/* Decorative elements - from leaderboard */}
-          <div
+          {/* <div
             className={`absolute top-0 right-0 w-40 h-40 ${currentConfig.accentColor} rounded-3xl -translate-y-1/2 translate-x-1/2`}
           ></div>
           <div
             className={`absolute bottom-0 left-0 w-32 h-32 ${currentConfig.accentColor} rounded-3xl translate-y-1/2 -translate-x-1/2`}
-          ></div>
+          ></div> */}
 
           {/* Main content */}
           <div className="relative z-10">
@@ -124,7 +113,7 @@ export function PomodoroTimer() {
 
               <Separator
                 orientation="vertical"
-                className="h-32 mx-4 bg-border"
+                className="h-32 mx-4 bg-divider w-0.5"
               />
 
               {/* Circular Progress Section */}
@@ -180,13 +169,13 @@ export function PomodoroTimer() {
 
               <Separator
                 orientation="vertical"
-                className="h-32 mx-4 bg-border"
+                className="h-32 mx-4 bg-divider w-0.5"
               />
 
               {/* Controls */}
               <div className="flex flex-col items-center gap-6">
                 {/* Mode Switcher */}
-                <div className="flex gap-2 bg-secondary border border-divider rounded-full shadow-inner">
+                <div className="flex gap-1 p-1 bg-secondary border border-divider rounded-full shadow-inner">
                   {(
                     Object.keys(modeConfig) as Array<keyof typeof modeConfig>
                   ).map((timerMode) => (
@@ -213,7 +202,7 @@ export function PomodoroTimer() {
                   <Button
                     onClick={toggleTimer}
                     variant="ghost"
-                    className="text-muted gap-1 font-bold rounded-full hover:bg-muted-foreground transition-all duration-200 text-primary border-0  w-16 h-16 p-0"
+                    className="text-muted gap-1 font-bold rounded-full hover:bg-secondary transition-all duration-200 text-primary border-0  w-16 h-16 p-0"
                   >
                     {isActive ? (
                       <Pause className="w-16 h-16" />
@@ -224,14 +213,14 @@ export function PomodoroTimer() {
                   <Button
                     onClick={resetTimer}
                     variant="ghost"
-                    className="hover:bg-muted-foreground rounded-full w-16 h-16 shadow-none transition-all duration-200 border-0 p-0"
+                    className="hover:bg-secondary rounded-full w-16 h-16 shadow-none transition-all duration-200 border-0 p-0"
                   >
                     <RotateCcw className="w-16 h-16" />
                   </Button>
                   <Button
                     onClick={() => setIsDialogOpen(true)}
                     variant="ghost"
-                    className="hover:bg-muted-foreground rounded-full w-16 h-16 shadow-none transition-all duration-200 border-0 p-0"
+                    className="hover:bg-secondary rounded-full w-16 h-16 shadow-none transition-all duration-200 border-0 p-0"
                   >
                     <Settings className="w-16 h-16" />
                   </Button>

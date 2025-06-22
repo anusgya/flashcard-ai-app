@@ -1,36 +1,36 @@
-"use client"
+"use client";
 
-import { useSearchParams } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, Award, Target, Zap } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Award, Target, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 
 export default function QuizResultsPage() {
-  const searchParams = useSearchParams()
-  const attempted = Number.parseInt(searchParams.get("attempted") || "0")
-  const correct = Number.parseInt(searchParams.get("correct") || "0")
-  const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0
+  const searchParams = useSearchParams();
+  const attempted = Number.parseInt(searchParams.get("attempted") || "0");
+  const correct = Number.parseInt(searchParams.get("correct") || "0");
+  const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
 
-  const [showConfetti, setShowConfetti] = useState(false)
-  const [message, setMessage] = useState("")
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     // Determine message based on accuracy
     if (accuracy >= 90) {
-      setMessage("Outstanding! You're a quiz master!")
+      setMessage("Outstanding! You're a quiz master!");
     } else if (accuracy >= 70) {
-      setMessage("Great job! Almost perfect!")
+      setMessage("Great job! Almost perfect!");
     } else if (accuracy >= 50) {
-      setMessage("Good effort! Keep practicing!")
+      setMessage("Good effort! Keep practicing!");
     } else {
-      setMessage("Nice try! You'll do better next time!")
+      setMessage("Nice try! You'll do better next time!");
     }
 
     // Show confetti after a short delay
-    const timer = setTimeout(() => setShowConfetti(true), 500)
-    return () => clearTimeout(timer)
-  }, [accuracy])
+    const timer = setTimeout(() => setShowConfetti(true), 500);
+    return () => clearTimeout(timer);
+  }, [accuracy]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-8 relative overflow-hidden">
@@ -59,7 +59,13 @@ export default function QuizResultsPage() {
             >
               <div
                 className={`text-${
-                  ["yellow-400", "green-400", "blue-400", "purple-400", "pink-400"][Math.floor(Math.random() * 5)]
+                  [
+                    "yellow-400",
+                    "green-400",
+                    "blue-400",
+                    "purple-400",
+                    "pink-400",
+                  ][Math.floor(Math.random() * 5)]
                 } text-2xl`}
               >
                 {["✨", "🎉", "🏆", "⭐", "🌟"][Math.floor(Math.random() * 5)]}
@@ -116,7 +122,9 @@ export default function QuizResultsPage() {
           transition={{ delay: 0.3 }}
         >
           <h1 className="text-4xl font-bold text-foreground">Quiz Complete!</h1>
-          <p className="text-secondary-foreground font-fragment-mono ">{message}</p>
+          <p className="text-secondary-foreground font-fragment-mono ">
+            {message}
+          </p>
         </motion.div>
 
         <motion.div
@@ -125,7 +133,10 @@ export default function QuizResultsPage() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
         >
-          <motion.div className="space-y-2 bg-card/80 p-4 rounded-xl border border-border" whileHover={{ scale: 1.05 }}>
+          <motion.div
+            className="space-y-2 bg-card/80 p-4 rounded-xl border-2 border-divider"
+            whileHover={{ scale: 1.05 }}
+          >
             {/* <Target className="w-6 h-6 text-gray-400 mx-auto mb-2" /> */}
             <motion.p
               className="text-3xl font-bold text-primary-orange"
@@ -135,10 +146,15 @@ export default function QuizResultsPage() {
             >
               {attempted}
             </motion.p>
-            <p className="text-sm text-foreground  font-fragment-mono">Attempted</p>
+            <p className="text-sm text-foreground  font-fragment-mono">
+              Attempted
+            </p>
           </motion.div>
 
-          <motion.div className="space-y-2 bg-card/80 p-4 rounded-xl border border-border" whileHover={{ scale: 1.05 }}>
+          <motion.div
+            className="space-y-2 bg-card/80 p-4 rounded-xl border-2 border-divider"
+            whileHover={{ scale: 1.05 }}
+          >
             {/* <Award className="w-6 h-6 text-green-400 mx-auto mb-2" /> */}
             <motion.p
               className="text-3xl font-bold text-primary-green"
@@ -148,10 +164,15 @@ export default function QuizResultsPage() {
             >
               {correct}
             </motion.p>
-            <p className="text-sm text-foreground font-fragment-mono">Correct</p>
+            <p className="text-sm text-foreground font-fragment-mono">
+              Correct
+            </p>
           </motion.div>
 
-          <motion.div className="space-y-2  p-4 rounded-xl border border-border" whileHover={{ scale: 1.05 }}>
+          <motion.div
+            className="space-y-2  p-4 rounded-xl border-2 border-divider"
+            whileHover={{ scale: 1.05 }}
+          >
             {/* <Zap className="w-6 h-6 text-yellow-400 mx-auto mb-2" /> */}
             <motion.div className="relative h-10 flex items-center justify-center">
               <AnimatePresence mode="wait">
@@ -167,7 +188,9 @@ export default function QuizResultsPage() {
                 </motion.p>
               </AnimatePresence>
             </motion.div>
-            <p className="text-sm text-foreground font-fragment-mono">Accuracy</p>
+            <p className="text-sm text-foreground font-fragment-mono">
+              Accuracy
+            </p>
           </motion.div>
         </motion.div>
 
@@ -178,14 +201,14 @@ export default function QuizResultsPage() {
           transition={{ delay: 1.4 }}
         >
           <Button
-            className="bg-primary-green font-semibold  hover:bg-primary-green/90 text-muted  px-6 py-6 rounded-xl flex items-center gap-2 mx-auto group transition-all duration-300 shadow-lg shadow-primary-green/20"
+            className="bg-primary-green font-semibold  hover:border-0 text-muted  px-6 py-6 rounded-xl flex items-center gap-2 mx-auto group transition-all duration-300 shadow-lg shadow-primary-green/20"
             onClick={() => (window.location.href = "/quiz")}
           >
-            <ArrowLeft className="w-5 h-5 group-hover:translate-x-[-4px]  transition-transform" />
+            <ArrowLeft className="w-5 h-5 " />
             <span>Back to Quizzes</span>
           </Button>
         </motion.div>
       </motion.div>
     </div>
-  )
+  );
 }

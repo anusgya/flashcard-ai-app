@@ -38,6 +38,6 @@ from schemas.interaction import (
     CardInteractionBase, CardInteractionCreate, CardInteractionResponse,
     LLMResponseBase, LLMResponseCreate, LLMResponseResponse, LLMResponseUpdate,
     MnemonicRequest, ExplanationRequest, ExampleRequest,
-    InteractionType, ResponseType
+    InteractionType, ResponseType, CommentBase, CommentCreate, CommentResponse, CommentUpdate
 )
 from schemas.auth import Token, TokenData

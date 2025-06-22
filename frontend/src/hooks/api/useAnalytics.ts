@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import useSWR from "swr";
 import { fetchWithAuth } from "./fetchWithAuth"; // Assuming fetchWithAuth is in the same directory
 
 export enum TimeRange {
@@ -82,6 +83,19 @@ interface SessionFrequencyData {
   monthly: SessionFrequency;
 }
 
+export interface ActivityDetails {
+  cards_studied: number;
+  time_spent_minutes: number;
+  study_sessions: number;
+  quiz_sessions: number;
+}
+
+export interface ActivityDay {
+  date: string;
+  intensity: number;
+  activities: ActivityDetails;
+}
+
 export const useAnalyticsDashboard = (timeRange: TimeRange) => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -112,4 +126,17 @@ export const useAnalyticsDashboard = (timeRange: TimeRange) => {
   }, [timeRange]);
 
   return { analytics, isLoading, isError };
+};
+
+export const useActivityHeatmap = (year: number) => {
+  const { data, error, isLoading } = useSWR<ActivityDay[]>(
+    year ? `/api/analytics/activity-heatmap?year=${year}` : null,
+    fetchWithAuth
+  );
+
+  return {
+    activityData: data,
+    isLoading,
+    isError: error,
+  };
 };

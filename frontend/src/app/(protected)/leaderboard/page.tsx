@@ -103,7 +103,6 @@ const LeaderboardContent = ({ timeRange }: LeaderboardContentProps) => {
           transition={{ duration: 0.3, delay: 0.1 }}
           className="relative mb-20"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-green-500/20 to-orange-500/20 blur-xl opacity-50 rounded-xl"></div>
           <Card className="relative overflow-hidden bg-card/80 backdrop-blur-sm border-2 border-divider rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-green-500/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
@@ -112,7 +111,7 @@ const LeaderboardContent = ({ timeRange }: LeaderboardContentProps) => {
                 <div className="relative">
                   <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <span className="text-2xl font-bold text-foreground relative z-10">
+                    <span className="text-2xl font-bold text-primary-green relative z-10">
                       #{userRankDetails.rank}
                     </span>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
@@ -122,7 +121,7 @@ const LeaderboardContent = ({ timeRange }: LeaderboardContentProps) => {
                   <h2 className="text-xl font-bold text-foreground">
                     Your Rank
                   </h2>
-                  <p className="text-secondary-foreground">
+                  <p className="text-secondary-foreground font-fragment-mono">
                     Keep up the great work!
                   </p>
                 </div>

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { DeckCard } from "@/components/ui/deck-card";
 import { useDecks } from "@/hooks/api/use-deck";
 
@@ -15,7 +15,6 @@ interface Deck {
   total_cards?: number;
 }
 
-
 export default function LearnPage() {
   const { decks } = useDecks();
   return (
@@ -29,14 +28,14 @@ export default function LearnPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {decks?.map((deck:Deck) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {decks?.map((deck: Deck) => (
           <DeckCard
             key={deck.id}
             id={deck.id}
             title={deck.name}
-            learningCount={deck.learning_cards||0}
-            totalCount={deck.total_cards||0}
+            learningCount={deck.learning_cards || 0}
+            totalCount={deck.total_cards || 0}
           />
         ))}
       </div>

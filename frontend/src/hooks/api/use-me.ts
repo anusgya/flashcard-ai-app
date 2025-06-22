@@ -1,13 +1,17 @@
-import useSWR from 'swr';
-import { fetcher, fetchWithAuth } from './fetchWithAuth';
+import useSWR from "swr";
+import { fetchWithAuth } from "./fetchWithAuth";
 
 // Get the currently authenticated user
 export default function useMe() {
-  const { data, error, isLoading, mutate } = useSWR('/api/users/me', fetcher, {
-    revalidateOnFocus: false,
-    revalidateIfStale: true,
-    dedupingInterval: 60000,
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    "/api/users/me",
+    fetchWithAuth,
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: true,
+      dedupingInterval: 60000,
+    }
+  );
 
   return {
     user: data,
@@ -25,8 +29,8 @@ export async function updateUserProfile(userData: {
   settings?: any;
   avatar?: string;
 }) {
-  return fetchWithAuth('/api/users/me', {
-    method: 'PUT',
+  return fetchWithAuth("/api/users/me", {
+    method: "PUT",
     body: JSON.stringify(userData),
   });
 }
@@ -37,8 +41,6 @@ export async function updateUserAvatar(avatarPath: string) {
 }
 
 // Function to change password
-export async function changePassword(passwordData: {
-  password: string;
-}) {
+export async function changePassword(passwordData: { password: string }) {
   return updateUserProfile({ password: passwordData.password });
 }

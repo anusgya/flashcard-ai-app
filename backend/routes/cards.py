@@ -30,11 +30,18 @@ async def get_cards(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
-    query = db.query(Card).join(Deck).filter(Deck.user_id == current_user.id)
+    # Base query for cards, joining with Deck to check ownership or public status
+    query = db.query(Card).join(Deck).filter(
+        (Deck.user_id == current_user.id) | (Deck.is_public == True)
+    )
     
     if deck_id:
+        # This filter is now implicitly authorized by the base query
         query = query.filter(Card.deck_id == deck_id)
-    
+    else:
+        # If no specific deck is requested, only return cards from the user's own decks
+        query = query.filter(Deck.user_id == current_user.id)
+
     if tag_id:
         query = query.join(CardTag).filter(CardTag.tag_id == tag_id)
         

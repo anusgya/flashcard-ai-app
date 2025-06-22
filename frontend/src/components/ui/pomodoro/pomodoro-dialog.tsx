@@ -14,6 +14,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { PomodoroSettings } from "@/hooks/use-pomodoro";
 
@@ -151,65 +158,21 @@ export function PomodoroDialog({
 
             <div className="space-y-2 pt-4">
               <Label>Alarm Sound</Label>
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  variant={
-                    localSettings.alarmSound === "bell" ? "default" : "outline"
-                  }
-                  size="sm"
-                  onClick={() =>
-                    setLocalSettings({ ...localSettings, alarmSound: "bell" })
-                  }
-                  className={cn(
-                    "text-xs",
-                    localSettings.alarmSound === "bell" && "bg-primary-green"
-                  )}
-                >
-                  Bell
-                </Button>
-                <Button
-                  variant={
-                    localSettings.alarmSound === "digital"
-                      ? "default"
-                      : "outline"
-                  }
-                  size="sm"
-                  onClick={() =>
-                    setLocalSettings({
-                      ...localSettings,
-                      alarmSound: "digital",
-                    })
-                  }
-                  className={cn(
-                    "text-xs",
-                    localSettings.alarmSound === "digital" &&
-                      "bg-blue-500 hover:bg-blue-600"
-                  )}
-                >
-                  Digital
-                </Button>
-                <Button
-                  variant={
-                    localSettings.alarmSound === "gentle"
-                      ? "default"
-                      : "outline"
-                  }
-                  size="sm"
-                  onClick={() =>
-                    setLocalSettings({
-                      ...localSettings,
-                      alarmSound: "gentle",
-                    })
-                  }
-                  className={cn(
-                    "text-xs",
-                    localSettings.alarmSound === "gentle" &&
-                      "bg-orange-500 hover:bg-orange-600"
-                  )}
-                >
-                  Gentle
-                </Button>
-              </div>
+              <Select
+                value={localSettings.alarmSound}
+                onValueChange={(value: "bell" | "digital" | "gentle") =>
+                  setLocalSettings({ ...localSettings, alarmSound: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an alarm sound" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bell">Bell</SelectItem>
+                  <SelectItem value="digital">Digital</SelectItem>
+                  <SelectItem value="gentle">Gentle</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
@@ -220,7 +183,8 @@ export function PomodoroDialog({
           </Button>
           <Button
             onClick={handleSave}
-            className="bg-green-500 hover:bg-green-600 text-white"
+            variant="ghost"
+            className="text-primary-green hover:text-primary-green"
           >
             Save changes
           </Button>

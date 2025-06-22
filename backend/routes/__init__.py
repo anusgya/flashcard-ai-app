@@ -10,6 +10,7 @@ from .gamification import router as gamification
 from .interactions import router as interactions
 from .auth import router as auth  # Fixed: changed from auth_routes to auth
 from .analytics import router as analytics
+from .comments import router as comments
 
 # Create main API router
 api_router = APIRouter()
@@ -25,6 +26,7 @@ api_router.include_router(gamification, tags=["gamification"])
 api_router.include_router(interactions,  tags=["interactions"])
 api_router.include_router(uploads, tags=["uploads"])
 api_router.include_router(analytics, tags=["analytics"])
+api_router.include_router(comments, tags=["comments"])
 
 # Export the main router
 __all__ = ["api_router"]

@@ -33,6 +33,8 @@ class DeckResponse(DeckBase):
     # card_count: Optional[int] = 0
     total_cards: Optional[int] = None
     learning_cards: Optional[int] = None
+    creator_username: Optional[str] = None
+    creator_avatar: Optional[str] = None
     
     class Config:
         from_attributes = True  # Updated from orm_mode

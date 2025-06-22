@@ -6,7 +6,7 @@ from models.tag import Tag, CardTag
 from models.study import StudySession, StudyRecord
 from models.quiz import QuizSession, QuizQuestion, QuizAnswer
 from models.gamification import DailyStreak, Achievement, LeaderboardEntry
-from models.interaction import CardInteraction, LLMResponse
+from models.interaction import CardInteraction, LLMResponse, Comment
 from sqlalchemy.orm import relationship
 
 # Add relationships that couldn't be defined earlier due to circular imports
@@ -35,5 +35,6 @@ __all__ = [
     "Achievement",
     "LeaderboardEntry",
     "CardInteraction",
-    "LLMResponse"
+    "LLMResponse",
+    "Comment"
 ]

@@ -1,4 +1,4 @@
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, Globe } from "lucide-react";
 import { Button } from "./button";
 import Link from "next/link";
 import { Pencil } from "lucide-react";
@@ -32,6 +32,7 @@ interface DeckListItemProps {
   dueCount: number;
   learnCount: number;
   id: string; // Add this prop
+  is_public: boolean;
   OnDeckDelete: () => void;
   OnDeckEdit: () => void;
 }
@@ -43,11 +44,15 @@ export function DeckListItem({
   dueCount,
   learnCount,
   id,
+  is_public,
   OnDeckEdit,
   OnDeckDelete,
 }: DeckListItemProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showPublicConfirmDialog, setShowPublicConfirmDialog] = useState(false);
+  const [showPrivateConfirmDialog, setShowPrivateConfirmDialog] =
+    useState(false);
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: title,
@@ -96,6 +101,48 @@ export function DeckListItem({
       });
       console.error("Failed to update deck:", error);
     }
+  };
+
+  const handleSetPrivate = async () => {
+    try {
+      await updateDeck(id, { is_public: false });
+      toast({
+        title: "Deck is now private!",
+        description: "This deck is no longer visible to other users.",
+        variant: "default",
+      });
+      if (OnDeckEdit) {
+        OnDeckEdit();
+      }
+    } catch (error) {
+      console.error("Failed to make deck private:", error);
+      toast({
+        title: "Failed to make deck private.",
+        variant: "destructive",
+      });
+    }
+    setShowPrivateConfirmDialog(false);
+  };
+
+  const handleSetPublic = async () => {
+    try {
+      await updateDeck(id, { is_public: true });
+      toast({
+        title: "Deck is now public!",
+        description: "Other users can now view this deck.",
+        variant: "default",
+      });
+      if (OnDeckEdit) {
+        OnDeckEdit();
+      }
+    } catch (error) {
+      console.error("Failed to make deck public:", error);
+      toast({
+        title: "Failed to make deck public.",
+        variant: "destructive",
+      });
+    }
+    setShowPublicConfirmDialog(false);
   };
 
   return (
@@ -154,6 +201,35 @@ export function DeckListItem({
             >
               <Delete className="h-4 w-4" />
             </Button>
+            {is_public ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-primary-green hover:text-primary-green"
+                title="Make deck private"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowPrivateConfirmDialog(true);
+                }}
+              >
+                <Globe className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-secondary-foreground hover:text-foreground"
+                title="Make deck public"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowPublicConfirmDialog(true);
+                }}
+              >
+                <Globe className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </Link>
@@ -176,6 +252,59 @@ export function DeckListItem({
               className="bg-transparent border-0 hover:bg-secondary text-red-500"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={showPrivateConfirmDialog}
+        onOpenChange={setShowPrivateConfirmDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Make this deck private?</AlertDialogTitle>
+            <AlertDialogDescription className="text-secondary-foreground">
+              This deck will no longer be visible to other users. Are you sure
+              you want to make "{title}" private?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-0 hover:bg-secondary">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSetPrivate}
+              className="bg-transparent border-0 hover:bg-secondary text-red-500"
+            >
+              Make Private
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={showPublicConfirmDialog}
+        onOpenChange={setShowPublicConfirmDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Make this deck public?</AlertDialogTitle>
+            <AlertDialogDescription className="text-secondary-foreground">
+              Public decks are visible to other users. They will be able to view
+              and study the cards in this deck. Are you sure you want to make "
+              {title}" public?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-0 hover:bg-secondary">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSetPublic}
+              className="bg-transparent border-0 hover:bg-secondary text-primary-green"
+            >
+              Make Public
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

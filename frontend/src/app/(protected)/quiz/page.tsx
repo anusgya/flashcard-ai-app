@@ -31,7 +31,7 @@ export default function QuizPage() {
         </p>
       </div>
       <motion.div
-        className="gap-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+        className="gap-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
         variants={{
           hidden: { opacity: 0 },
           show: {
@@ -56,6 +56,7 @@ export default function QuizPage() {
               deck_id={deck.id}
               title={deck.name}
               cardsCount={deck.total_cards || 0}
+              description={deck.description}
             />
           </motion.div>
         ))}
