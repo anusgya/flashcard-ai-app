@@ -24,7 +24,7 @@ export function AnswerButton({
     <motion.button
       onClick={onClick}
       className={cn(
-        "w-full px-4 py-2 rounded-lg border-2 text-left font-fragment-mono",
+        "w-full p-4 rounded-lg border-[1.5px] text-lg text-left ",
         "hover:border-primary-green/50 transition-colors",
         "disabled:cursor-not-allowed flex items-center space-x-4",
         isSelected && !isRevealed && "border-primary-blue bg-primary-blue/10",
@@ -39,10 +39,10 @@ export function AnswerButton({
       whileTap={{ scale: 0.98 }}
       disabled={isRevealed}
     >
-      <span className="flex-shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center text-secondary-foreground font-bold">
+      <span className="flex-shrink-0 w-10 h-10 rounded-full bg-background text-secondary-foreground flex items-center justify-center font-bold">
         {number}
       </span>
-      <span className="text-lg">{answer}</span>
+      <span className="">{answer}</span>
     </motion.button>
   );
 }

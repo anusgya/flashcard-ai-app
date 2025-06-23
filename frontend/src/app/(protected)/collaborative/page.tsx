@@ -176,7 +176,7 @@ export default function CollaborativePage() {
         transition={{ duration: 0.5, delay: 0.2 }}
       >
         <Tabs defaultValue="all-public-decks">
-          <TabsList>
+          <TabsList className="gap-x-2">
             <TabsTrigger value="all-public-decks">All public decks</TabsTrigger>
             <TabsTrigger value="my-public-decks">My public decks</TabsTrigger>
           </TabsList>

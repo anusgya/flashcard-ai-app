@@ -12,7 +12,7 @@ class QuizSession(Base):
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    deck_id = Column(UUID(as_uuid=True), ForeignKey("decks.id", ondelete="CASCADE"), nullable=True)
+    deck_id = Column(UUID(as_uuid=True), ForeignKey("decks.id", ondelete="SET NULL"), nullable=True)
     start_time = Column(DateTime, default=datetime.utcnow)
     end_time = Column(DateTime, nullable=True)
     total_questions = Column(Integer, default=0)
@@ -23,7 +23,7 @@ class QuizSession(Base):
     
     # Relationships
     user = relationship("User", back_populates="quiz_sessions")
-    deck = relationship("Deck")
+    deck = relationship("Deck", back_populates="quiz_sessions")
     # Remove cascade="all, delete-orphan" from here
     answers = relationship("QuizAnswer", cascade='delete', back_populates="session") # Rely on DB cascades now
 

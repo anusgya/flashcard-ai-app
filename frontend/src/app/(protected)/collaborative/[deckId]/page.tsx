@@ -6,12 +6,12 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useParams } from "next/navigation";
-import { usePublicDecks } from "@/hooks/api/use-deck";
+import { useParams, useRouter } from "next/navigation";
+import { usePublicDecks, useDecks, cloneDeck } from "@/hooks/api/use-deck";
 import { useCards } from "@/hooks/api/use-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Copy, Search } from "lucide-react";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { DiscussionThread } from "@/components/ui/discussion-thread";
@@ -22,6 +22,7 @@ import {
   updateComment,
   useComments,
 } from "@/hooks/api/use-comments";
+import { useToast } from "@/hooks/use-toast";
 
 interface CardData {
   id: string;
@@ -33,8 +34,11 @@ export default function CollaborativeDeckPage() {
   const params = useParams<{ deckId: string }>();
   const deckId = params.deckId;
   const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
+  const { toast } = useToast();
 
   const { publicDecks, isLoading: areDecksLoading } = usePublicDecks();
+  const { mutate: mutateDecks } = useDecks();
   const deck = publicDecks?.find((d: any) => d.id === deckId);
 
   const { cards, isLoading: areCardsLoading } = useCards(deckId);
@@ -70,6 +74,27 @@ export default function CollaborativeDeckPage() {
       mutateComments();
     } catch (error) {
       console.error("Failed to delete comment:", error);
+    }
+  };
+
+  const handleCloneDeck = async () => {
+    if (!deckId) return;
+
+    try {
+      const newDeck = await cloneDeck(deckId);
+      mutateDecks();
+      toast({
+        title: "Deck Cloned!",
+        description: `The deck "${deck?.name}" has been successfully cloned.`,
+      });
+      router.push(`/decks/${newDeck.id}/cards`);
+    } catch (error) {
+      console.error("Failed to clone deck:", error);
+      toast({
+        title: "Error Cloning Deck",
+        description: "An unexpected error occurred while cloning the deck.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -171,15 +196,27 @@ export default function CollaborativeDeckPage() {
       </div>
 
       <Tabs defaultValue="cards" className="mt-8">
-        <TabsList className="">
-          <TabsTrigger value="cards">Cards ({cards?.length || 0})</TabsTrigger>
-          <TabsTrigger value="discussion">
-            Discussion
-            <Badge className="ml-2 bg-red-500 text-white rounded-full  hover:bg-red-500/90">
-              {comments?.length || 0}
-            </Badge>
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex justify-between items-center">
+          <TabsList className="gap-x-2">
+            <TabsTrigger value="cards">
+              Cards ({cards?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="discussion">
+              Discussion
+              <Badge className="ml-2 bg-red-500 text-white rounded-full  hover:bg-red-500/90">
+                {comments?.length || 0}
+              </Badge>
+            </TabsTrigger>
+          </TabsList>
+          <Button
+            variant="outline"
+            className="text-secondary-foreground border border-divider hover:text-foreground h-9"
+            onClick={handleCloneDeck}
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            Clone Deck
+          </Button>
+        </div>
         <Separator className="bg-divider my-6" />
 
         <TabsContent value="cards" className="mt-6">

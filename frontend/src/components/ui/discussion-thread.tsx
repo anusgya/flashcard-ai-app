@@ -72,6 +72,21 @@ export function DiscussionThread({
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const isAuthor = user?.id === comment.author.id;
 
+    const getUTCDate = (dateString: string): Date => {
+      if (typeof dateString !== "string") {
+        return new Date(dateString);
+      }
+
+      const hasTimezone =
+        dateString.endsWith("Z") || /([+-])(\d{2}):?(\d{2})?$/.test(dateString);
+
+      if (hasTimezone) {
+        return new Date(dateString.replace(" ", "T"));
+      }
+
+      return new Date(dateString.replace(" ", "T") + "Z");
+    };
+
     const handleReply = () => {
       if (replyContent.trim() && onAddComment) {
         onAddComment(replyContent, comment.id);
@@ -171,7 +186,7 @@ export function DiscussionThread({
             )}
             <div className="flex items-center gap-4 mt-2">
               <span className="text-xs text-secondary-foreground">
-                {formatDistanceToNow(new Date(comment.created_at), {
+                {formatDistanceToNow(getUTCDate(comment.created_at), {
                   addSuffix: true,
                 })}
               </span>

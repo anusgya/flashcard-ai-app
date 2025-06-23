@@ -95,7 +95,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({
       return {
         date: dayDate,
         intensity: hasActivity ? apiDay.intensity : 0,
-        type: hasActivity ? "activity" : "no-activity",
+        type: isFuture ? "future" : hasActivity ? "activity" : "no-activity",
         activities: {
           cards: apiDay.activities.cards_studied,
           time: apiDay.activities.time_spent_minutes,
@@ -109,11 +109,8 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth();
 
-  const [startMonth, setStartMonth] = useState(() => {
-    return Math.max(0, currentMonth - 5);
-  });
-
-  const endMonth = Math.min(startMonth + 5, 11);
+  const startMonth = 0;
+  const endMonth = 11;
 
   const [tooltip, setTooltip] = useState<TooltipState>({
     visible: false,
@@ -227,15 +224,12 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({
 
   const displayDays: string[] = ["", "Mon", "", "Wed", "", "Fri", ""];
 
-  const handlePrevious = () => setStartMonth((prev) => Math.max(0, prev - 1));
-  const handleNext = () => setStartMonth((prev) => Math.min(6, prev + 1));
-
   useEffect(() => {
     const currentMonth = new Date().getMonth();
     if (currentMonth > endMonth) {
-      setStartMonth(Math.max(0, currentMonth - 5));
+      // This condition is never met because endMonth is always 11
     } else if (currentMonth < startMonth) {
-      setStartMonth(currentMonth);
+      // This condition is never met because startMonth is always 0
     }
   }, [startMonth, endMonth]);
 
@@ -257,26 +251,6 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({
     <div className="bg-background rounded-lg relative">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-lg font-medium">Activity Heatmap</h2>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handlePrevious}
-            disabled={startMonth === 0}
-            className={`p-1 rounded-full ${
-              startMonth === 0 ? "text-gray-500" : "hover:bg-gray-700"
-            }`}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            onClick={handleNext}
-            disabled={endMonth >= 11}
-            className={`p-1 rounded-full ${
-              endMonth >= 11 ? "text-gray-500" : "hover:bg-gray-700"
-            }`}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
       </div>
 
       <div className="flex mb-2 text-[11px] font-fragment-mono text-secondary-foreground">
@@ -356,6 +330,8 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({
               <div className="space-y-1.5">
                 {tooltip.day.type === "no-activity" ? (
                   <div>No activity recorded on this day</div>
+                ) : tooltip.day.type === "future" ? (
+                  <div>This date is in the future</div>
                 ) : (
                   <>
                     <div className="flex justify-between gap-8">

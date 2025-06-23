@@ -68,7 +68,6 @@ export default function Settings() {
             <motion.div variants={item}>
               <AccordionItem value="avatar" className="border rounded-lg">
                 <AccordionTrigger className="px-4 hover:no-underline font-semibold text-md">
-                  {" "}
                   🦊 Select Avatar
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">

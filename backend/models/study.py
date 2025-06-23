@@ -12,7 +12,7 @@ class StudySession(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    deck_id = Column(UUID(as_uuid=True), ForeignKey("decks.id", ondelete="CASCADE"), nullable=False)
+    deck_id = Column(UUID(as_uuid=True), ForeignKey("decks.id", ondelete="SET NULL"), nullable=True)
     start_time = Column(DateTime, default=datetime.utcnow)
     end_time = Column(DateTime, nullable=True)
     cards_studied = Column(Integer, default=0)
@@ -22,7 +22,7 @@ class StudySession(Base):
 
     # Relationships
     user = relationship("User", back_populates="study_sessions")
-    deck = relationship("Deck")
+    deck = relationship("Deck", back_populates="study_sessions")
     records = relationship("StudyRecord", back_populates="session", cascade="all, delete-orphan")
 
 

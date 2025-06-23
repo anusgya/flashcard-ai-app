@@ -246,18 +246,22 @@ export async function startQuiz(
   deckId: UUID,
   difficulty: QuizDifficulty = QuizDifficulty.MEDIUM,
   numQuestions?: number,
-  options: RequestInit = {}
+  options: { signal?: AbortSignal } = {}
 ): Promise<StartQuizResponse> {
-  const queryParams = new URLSearchParams();
-  queryParams.append("deck_id", deckId as string);
-  queryParams.append("difficulty", difficulty);
-  if (numQuestions)
-    queryParams.append("num_questions", numQuestions.toString());
+  const body = {
+    deck_id: deckId,
+    difficulty: difficulty,
+    num_questions: numQuestions,
+  };
 
-  return fetchWithAuth(`/api/quiz/start?${queryParams.toString()}`, {
-    method: "POST",
-    ...options,
-  });
+  return fetchWithAuth(
+    `/api/quiz/start`,
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+    options
+  );
 }
 
 // Generate quiz questions for a deck
@@ -267,15 +271,16 @@ export async function generateQuizQuestions(
   numQuestions?: number,
   regenerate: boolean = false
 ): Promise<QuizQuestionResponse[]> {
-  const queryParams = new URLSearchParams();
-  queryParams.append("deck_id", deckId as string);
-  queryParams.append("difficulty", difficulty);
-  if (numQuestions)
-    queryParams.append("num_questions", numQuestions.toString());
-  queryParams.append("regenerate", regenerate.toString());
+  const body = {
+    deck_id: deckId,
+    difficulty: difficulty,
+    num_questions: numQuestions,
+    regenerate: regenerate,
+  };
 
-  return fetchWithAuth(`/api/quiz/generate?${queryParams.toString()}`, {
+  return fetchWithAuth(`/api/quiz/generate`, {
     method: "POST",
+    body: JSON.stringify(body),
   });
 }
 
@@ -316,6 +321,29 @@ export function useRandomQuestions(
 
   return {
     questions: data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+  };
+}
+
+// Get all answers for a quiz session
+export function useSessionAnswers(sessionId: UUID | null) {
+  const url = sessionId ? `/api/quiz/session/${sessionId}/answers` : null;
+
+  const { data, error, isLoading, mutate } = useSWR<QuizAnswerResponse[]>(
+    url,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: true,
+      dedupingInterval: 60000, // 1 minute
+    }
+  );
+
+  return {
+    answers: data,
     isLoading,
     isError: !!error,
     error,

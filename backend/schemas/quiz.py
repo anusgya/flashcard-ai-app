@@ -86,6 +86,18 @@ class QuizSessionStats(BaseModel):
     average_time: float
     completion_rate: float
 
+# Request body schemas for starting and generating quizzes
+class QuizStartRequest(BaseModel):
+    deck_id: UUID4
+    difficulty: QuizDifficulty = QuizDifficulty.MEDIUM
+    num_questions: Optional[int] = Field(None, gt=0)
+
+class GenerateQuizRequest(BaseModel):
+    deck_id: UUID4
+    difficulty: QuizDifficulty = QuizDifficulty.MEDIUM
+    num_questions: Optional[int] = Field(None, gt=0)
+    regenerate: bool = False
+
 # Add this new schema definition
 class QuizStartResponse(BaseModel):
     session: QuizSessionResponse # Make sure QuizSessionResponse is defined/imported

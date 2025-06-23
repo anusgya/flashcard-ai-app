@@ -22,7 +22,9 @@ from schemas.quiz import (
     QuizAnswerResponse,
     QuizAnswerCreate,
     QuizSessionStats,
-    QuizQuestionResponse
+    QuizQuestionResponse,
+    QuizStartRequest,
+    GenerateQuizRequest,
 )
 from auth import get_current_active_user
 from utils.streak_utils import update_daily_streak
@@ -455,9 +457,7 @@ def get_session_questions(
 
 @router.post("/start", response_model=QuizStartResponse) # This uses the imported schema
 def start_quiz(
-    deck_id: str,
-    difficulty: Optional[QuizDifficulty] = QuizDifficulty.MEDIUM, # Use imported Enum
-    num_questions: Optional[int] = None,
+    quiz_config: QuizStartRequest,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):
@@ -466,7 +466,7 @@ def start_quiz(
     This endpoint combines session creation with question generation.
     """
     # Verify deck exists and user has access
-    deck = db.query(models.Deck).filter(models.Deck.id == deck_id).first()
+    deck = db.query(models.Deck).filter(models.Deck.id == quiz_config.deck_id).first()
     if not deck:
         raise HTTPException(status_code=404, detail="Deck not found")
     if not deck.is_public and deck.user_id != current_user.id:
@@ -475,7 +475,7 @@ def start_quiz(
     try:
         # Create a new quiz session
         db_session = models.QuizSession(
-            deck_id=deck_id,
+            deck_id=quiz_config.deck_id,
             user_id=current_user.id
         )
         db.add(db_session)
@@ -483,13 +483,13 @@ def start_quiz(
         db.refresh(db_session)
         
         # Get cards from the deck
-        cards = db.query(models.Card).filter(models.Card.deck_id == deck_id).all()
+        cards = db.query(models.Card).filter(models.Card.deck_id == quiz_config.deck_id).all()
         if not cards:
             raise HTTPException(status_code=404, detail="No cards found in this deck")
         
         # Limit cards if requested
-        if num_questions and num_questions < len(cards):
-            cards = random.sample(cards, num_questions)
+        if quiz_config.num_questions and quiz_config.num_questions < len(cards):
+            cards = random.sample(cards, quiz_config.num_questions)
         
         # Randomize the order
         random.shuffle(cards)
@@ -500,7 +500,7 @@ def start_quiz(
             # Check if this card already has a quiz question with the requested difficulty
             existing_question = db.query(models.QuizQuestion).filter(
                 models.QuizQuestion.card_id == card.id,
-                models.QuizQuestion.difficulty == difficulty.value
+                models.QuizQuestion.difficulty == quiz_config.difficulty.value
             ).first()
             
             if existing_question:
@@ -519,15 +519,15 @@ def start_quiz(
                     quiz_data = generate_quiz_question(
                         front_content=front_content,
                         back_content=back_content,
-                        difficulty=difficulty.value,
+                        difficulty=quiz_config.difficulty.value,
                         topic=deck.name,
-                        num_options=3
+                        num_options=4 # 1 correct, 3 incorrect
                     )
 
                     print(f"Generated quiz data: {quiz_data}")  # Debugging line
                     
                     # The options should include the correct answer and the generated incorrect options
-                    all_options = [condensed_answer] + quiz_data["options"][:3]
+                    all_options = quiz_data["options"]
                     random.shuffle(all_options)  # Randomize option order
                     
                     # Create new question in DB
@@ -536,7 +536,7 @@ def start_quiz(
                         question_text=front_content,  # Use the card's front content as the question
                         correct_answer=condensed_answer,  # Use the condensed answer
                         options=all_options,
-                        difficulty=difficulty.value
+                        difficulty=quiz_config.difficulty.value
                     )
                     
                     db.add(new_question)
@@ -566,10 +566,7 @@ def start_quiz(
 
 @router.post("/generate", response_model=List[QuizQuestionResponse])
 def generate_quiz_questions(
-    deck_id: str,
-    difficulty: Optional[QuizDifficulty] = QuizDifficulty.MEDIUM,
-    num_questions: Optional[int] = None,
-    regenerate: Optional[bool] = False,
+    request_data: GenerateQuizRequest,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):
@@ -577,20 +574,20 @@ def generate_quiz_questions(
     Generate quiz questions for a deck with proper answer condensing.
     """
     # Verify deck exists and user has access
-    deck = db.query(models.Deck).filter(models.Deck.id == deck_id).first()
+    deck = db.query(models.Deck).filter(models.Deck.id == request_data.deck_id).first()
     if not deck:
         raise HTTPException(status_code=404, detail="Deck not found")
     if not deck.is_public and deck.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to access this deck")
     
     # Get all cards from the deck
-    cards = db.query(models.Card).filter(models.Card.deck_id == deck_id).all()
+    cards = db.query(models.Card).filter(models.Card.deck_id == request_data.deck_id).all()
     if not cards:
         raise HTTPException(status_code=404, detail="No cards found in this deck")
     
     # Randomly sample cards if we have more than requested
-    if num_questions and len(cards) > num_questions:
-        cards = random.sample(cards, num_questions)
+    if request_data.num_questions and len(cards) > request_data.num_questions:
+        cards = random.sample(cards, request_data.num_questions)
     
     # Prepare to store quiz questions
     quiz_questions = []
@@ -599,10 +596,10 @@ def generate_quiz_questions(
         # Check if this user has already interacted with this card at this difficulty
         existing_question = db.query(models.QuizQuestion).filter(
             models.QuizQuestion.card_id == card.id,
-            models.QuizQuestion.difficulty == difficulty.value
+            models.QuizQuestion.difficulty == request_data.difficulty.value
         ).first()
         
-        if existing_question and not regenerate:
+        if existing_question and not request_data.regenerate:
             # Use existing question if available and regeneration not requested
             quiz_questions.append(existing_question)
         else:
@@ -619,16 +616,16 @@ def generate_quiz_questions(
                 quiz_data = generate_quiz_question(
                     front_content=front_content,
                     back_content=back_content,
-                    difficulty=difficulty.value,
+                    difficulty=request_data.difficulty.value,
                     topic=deck.name,
-                    num_options=3
+                    num_options=4 # 1 correct, 3 incorrect
                 )
                 
                 # The options should include the correct answer and the generated incorrect options
-                all_options = [condensed_answer] + quiz_data["options"][:3]
+                all_options = quiz_data["options"]
                 random.shuffle(all_options)  # Randomize option order
                 
-                if existing_question and regenerate:
+                if existing_question and request_data.regenerate:
                     # Update existing question
                     existing_question.question_text = front_content  # Use card front as question
                     existing_question.correct_answer = condensed_answer  # Use condensed answer
@@ -645,7 +642,7 @@ def generate_quiz_questions(
                         question_text=front_content,  # Use card front as question
                         correct_answer=condensed_answer,  # Use condensed answer
                         options=all_options,
-                        difficulty=difficulty.value
+                        difficulty=request_data.difficulty.value
                     )
                     
                     db.add(new_question)

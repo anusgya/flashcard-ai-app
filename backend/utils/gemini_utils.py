@@ -119,6 +119,11 @@ def chat_about_card(front_content: str, back_content: str, user_message: str) ->
 
 # --- New Quiz Generation Functions ---
 
+def _normalize_text_for_comparison(text: str) -> str:
+    """Normalize text for comparison by lowercasing and removing punctuation."""
+    import string
+    return text.lower().translate(str.maketrans('', '', string.punctuation)).strip()
+
 def condense_answer(long_answer: str, max_length: int = 50) -> str:
     """Condense a long answer into a shorter version suitable for quizzes."""
     if len(long_answer) <= max_length:
@@ -187,6 +192,7 @@ def generate_quiz_options(question: str, correct_answer: str,
     4.  **Unique:** All generated options must be distinct from each other and from the correct answer.
     5.  **Formatting:** Provide only the text of the options, one option per line. Do not use numbering, letters (A, B, C), bullet points, or any markdown formatting.
     6.  **Length:** Keep options concise and roughly similar in length to the correct answer.
+    7.  **Completeness:** Each option MUST be a complete, grammatically correct sentence or phrase. Do not provide incomplete thoughts.
 
     Apply this difficulty level: {difficulty_guide.get(difficulty, difficulty_guide["medium"])}
 
@@ -210,7 +216,7 @@ def generate_quiz_options(question: str, correct_answer: str,
 
     # Remove any numbering or bullet points and clean up each option
     options = []
-    seen_options = {correct_answer.lower()}  # Keep track to ensure uniqueness vs correct answer
+    seen_options = {_normalize_text_for_comparison(correct_answer)}  # Keep track to ensure uniqueness
     
     for opt in raw_options:
         # Fix the regex pattern to properly handle list markers without cutting off first letters
@@ -220,9 +226,10 @@ def generate_quiz_options(question: str, correct_answer: str,
         if len(clean_opt) >= 2 and clean_opt.startswith('"') and clean_opt.endswith('"'):
             clean_opt = clean_opt[1:-1].strip()
 
-        if clean_opt and clean_opt.lower() not in seen_options:
+        normalized_opt = _normalize_text_for_comparison(clean_opt)
+        if clean_opt and normalized_opt not in seen_options:
             options.append(clean_opt)
-            seen_options.add(clean_opt.lower())
+            seen_options.add(normalized_opt)
     
     # If we didn't get enough options, generate more with an explicit instruction to avoid duplication
     if len(options) < num_options:
@@ -252,9 +259,10 @@ def generate_quiz_options(question: str, correct_answer: str,
             if len(clean_opt) >= 2 and clean_opt.startswith('"') and clean_opt.endswith('"'):
                 clean_opt = clean_opt[1:-1].strip()
                 
-            if clean_opt and clean_opt.lower() not in seen_options:
+            normalized_opt = _normalize_text_for_comparison(clean_opt)
+            if clean_opt and normalized_opt not in seen_options:
                 options.append(clean_opt)
-                seen_options.add(clean_opt.lower())
+                seen_options.add(normalized_opt)
                 
                 # Break once we have enough options
                 if len(options) >= num_options:
@@ -272,21 +280,31 @@ def generate_quiz_options(question: str, correct_answer: str,
         ]
         
         for template in fallback_templates:
-            if template.lower() not in seen_options:
+            normalized_template = _normalize_text_for_comparison(template)
+            if normalized_template not in seen_options:
                 options.append(template)
-                seen_options.add(template.lower())
+                seen_options.add(normalized_template)
                 
                 if len(options) >= num_options:
                     break
     
+    # Final deduplication as a failsafe
+    final_options = []
+    final_seen = {_normalize_text_for_comparison(correct_answer)}
+    for opt in options:
+        normalized_opt = _normalize_text_for_comparison(opt)
+        if normalized_opt not in final_seen:
+            final_options.append(opt)
+            final_seen.add(normalized_opt)
+
     # Limit to exactly the number requested
-    return options[:num_options]
+    return final_options[:num_options]
                           
 
 def generate_quiz_question(front_content: str, back_content: str, 
                            difficulty: str = "medium",
                            topic: Optional[str] = None,
-                           num_options: int = 3) -> Dict:
+                           num_options: int = 4) -> Dict:
     """
     Generate a complete multiple-choice question based on a flashcard.
     
@@ -307,13 +325,17 @@ def generate_quiz_question(front_content: str, back_content: str,
     incorrect_options = generate_quiz_options(
         question=front_content,
         correct_answer=condensed_answer,
-        num_options=num_options,
+        num_options=num_options - 1, # Generate N-1 incorrect options
         difficulty=difficulty,
         topic=topic
     )
     
     # Create a list with all options (correct + incorrect)
     all_options = [condensed_answer] + incorrect_options
+    
+    # Shuffle the options so the correct answer isn't always first
+    import random
+    random.shuffle(all_options)
     
     # Return the complete question package
     return {
@@ -326,7 +348,7 @@ def generate_quiz_question(front_content: str, back_content: str,
 def batch_generate_quiz_questions(cards: List[Tuple[str, str]], 
                                  difficulty: str = "medium",
                                  topic: Optional[str] = None,
-                                 num_options: int = 3) -> List[Dict]:
+                                 num_options: int = 4) -> List[Dict]:
     """
     Generate multiple quiz questions in a single batch to optimize API usage.
     
@@ -373,7 +395,7 @@ def batch_generate_quiz_questions(cards: List[Tuple[str, str]],
     
     {cards_text}
     
-    For each question, generate {num_options} plausible but incorrect multiple-choice options.
+    For each question, generate {num_options - 1} plausible but incorrect multiple-choice options.
     {difficulty_guide.get(difficulty, difficulty_guide["medium"])}
     
     Guidelines:
@@ -419,7 +441,7 @@ def batch_generate_quiz_questions(cards: List[Tuple[str, str]],
         
         # Clean up the options
         options = []
-        seen_options = {condensed.lower()}  # Track seen options to ensure uniqueness
+        seen_options = {_normalize_text_for_comparison(condensed)}  # Track seen options to ensure uniqueness
         
         for opt in option_lines:
             clean_opt = opt.strip()
@@ -427,18 +449,22 @@ def batch_generate_quiz_questions(cards: List[Tuple[str, str]],
             if len(clean_opt) >= 2 and clean_opt.startswith('"') and clean_opt.endswith('"'):
                 clean_opt = clean_opt[1:-1].strip()
                 
-            if clean_opt and clean_opt.lower() not in seen_options:
+            normalized_opt = _normalize_text_for_comparison(clean_opt)
+            if clean_opt and normalized_opt not in seen_options:
                 options.append(clean_opt)
-                seen_options.add(clean_opt.lower())
+                seen_options.add(normalized_opt)
         
         # If we didn't get enough options, generate them individually
-        if len(options) < num_options:
+        if len(options) < num_options - 1:
             question_dict = generate_quiz_question(front, back, difficulty, topic, num_options)
             result.append(question_dict)
             continue
             
         # Create all options (correct + incorrect)
-        all_options = [condensed] + options[:num_options]
+        all_options = [condensed] + options[:num_options - 1]
+        
+        # Shuffle the options so the correct answer isn't always first
+        random.shuffle(all_options)
         
         # Add the question dict to the result
         result.append({

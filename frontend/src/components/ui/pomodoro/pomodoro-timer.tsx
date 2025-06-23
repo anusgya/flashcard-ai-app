@@ -58,7 +58,7 @@ export function PomodoroTimer() {
   return (
     <>
       <motion.div
-        className="w-full relative overflow-hidden rounded-2xl"
+        className="w-full relative overflow-hidden rounded-3xl"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -69,7 +69,7 @@ export function PomodoroTimer() {
         ></div>
 
         <div
-          className={`relative rounded-2xl border-2  border-border bg-background/80 backdrop-blur-md py-3 px-8 transition-all duration-500 shadow-lg hover:shadow-xl`}
+          className={`relative rounded-3xl border  border-border bg-background/80 backdrop-blur-md py-3 px-8 transition-all duration-500 shadow-lg hover:shadow-xl`}
         >
           {/* Decorative elements - from leaderboard */}
           {/* <div
@@ -113,7 +113,7 @@ export function PomodoroTimer() {
 
               <Separator
                 orientation="vertical"
-                className="h-32 mx-4 bg-divider w-0.5"
+                className="h-24 mx-4 bg-divider w-0.5"
               />
 
               {/* Circular Progress Section */}
@@ -169,7 +169,7 @@ export function PomodoroTimer() {
 
               <Separator
                 orientation="vertical"
-                className="h-32 mx-4 bg-divider w-0.5"
+                className="h-24 mx-4 bg-divider w-0.5"
               />
 
               {/* Controls */}

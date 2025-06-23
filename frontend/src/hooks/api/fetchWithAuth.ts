@@ -10,7 +10,7 @@
 export const fetchWithAuth = async (
   url: string,
   options: RequestInit = {},
-  fetchOptions: { keepalive?: boolean } = {}
+  fetchOptions: { keepalive?: boolean; signal?: AbortSignal } = {}
 ) => {
   // Retrieve the authentication token from local storage
   const token = localStorage.getItem("token");
@@ -44,7 +44,7 @@ export const fetchWithAuth = async (
       ...options, // Spread the original options (method, body, etc.)
       headers, // Use the merged headers
       credentials: "include", // Include cookies in requests
-      ...fetchOptions, // Add keepalive if provided
+      ...fetchOptions, // Add keepalive or signal if provided
     });
 
     // --- Response Handling ---

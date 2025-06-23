@@ -22,3 +22,5 @@ class Deck(Base):
     # Relationships
     user = relationship("User", back_populates="decks")
     cards = relationship("Card", back_populates="deck", cascade="all, delete-orphan")
+    study_sessions = relationship("StudySession", back_populates="deck")
+    quiz_sessions = relationship("QuizSession", back_populates="deck")

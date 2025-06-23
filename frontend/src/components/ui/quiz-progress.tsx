@@ -25,7 +25,7 @@ export function QuizProgress({ currentQuestion, totalQuestions, diamonds, color 
         />
       </div>
       <div className="flex items-center gap-2 text-foreground">
-        <div className="text-xl">💎</div>
+        <div className="text-xl">♥️</div>
         <span className="font-fragment-mono">{diamonds}</span>
       </div>
     </div>
