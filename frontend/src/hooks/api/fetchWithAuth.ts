@@ -12,8 +12,6 @@ export const fetchWithAuth = async (
   options: RequestInit = {},
   fetchOptions: { keepalive?: boolean; signal?: AbortSignal } = {}
 ) => {
-  // Retrieve the authentication token from local storage
-  const token = localStorage.getItem("token");
   // Define the base URL for the API
   const baseUrl = "http://localhost:8000"; // Or your actual API base URL
 
@@ -25,11 +23,6 @@ export const fetchWithAuth = async (
   // needs to set it automatically with the correct boundary.
   if (!(options.body instanceof FormData)) {
     baseHeaders["Content-Type"] = "application/json";
-  }
-
-  // Add Authorization header if token exists
-  if (token) {
-    baseHeaders["Authorization"] = `Bearer ${token}`;
   }
 
   // Merge base headers with any custom headers provided in options
@@ -91,6 +84,12 @@ export const fetchWithAuth = async (
     }
 
     // --- Successful Response Handling ---
+
+    // If the response is a file download, return the response object directly
+    const disposition = response.headers.get("content-disposition");
+    if (disposition && disposition.includes("attachment")) {
+      return response;
+    }
 
     // Get content type and length to decide how to parse the body
     const contentType = response.headers.get("content-type");

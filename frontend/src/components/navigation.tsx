@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import useMe from "@/hooks/api/use-me";
+import { useSWRConfig } from "swr";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { PomodoroTimer } from "@/components/ui/pomodoro/pomodoro-timer";
+import Cookies from "js-cookie";
 
 interface NavItem {
   icon: string;
@@ -40,6 +42,7 @@ export function Navigation() {
   const router = useRouter();
   const { user } = useMe();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const { cache } = useSWRConfig();
 
   // Client-side route checking
   const segments = pathname.split("/").filter(Boolean);
@@ -57,13 +60,24 @@ export function Navigation() {
     setIsLogoutDialogOpen(true);
   };
 
-  const handleConfirmLogout = () => {
-    // Remove token from localStorage
-    localStorage.removeItem("token");
-    // Close the dialog
-    setIsLogoutDialogOpen(false);
-    // Redirect to login page
-    router.push("/login");
+  const handleConfirmLogout = async () => {
+    // First, clear the client-side cache to avoid showing stale data
+    if (cache instanceof Map) {
+      cache.clear();
+    }
+
+    try {
+      // Ask the backend to clear the HttpOnly cookie
+      await fetch("http://localhost:8000/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+
+    // Redirect to login page with a full page reload to clear all state
+    window.location.assign("/login");
   };
 
   if (hideSidebar) return null;

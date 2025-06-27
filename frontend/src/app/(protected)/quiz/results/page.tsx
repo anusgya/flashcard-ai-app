@@ -192,7 +192,7 @@ export default function QuizResultsPage() {
           >
             <motion.div
               whileHover={{ scale: 1.02 }}
-              className="bg-card/80 rounded-2xl p-4 border border-divider"
+              className="bg-card/80 rounded-2xl p-4 border border-divider flex flex-col"
             >
               <div className="flex items-center gap-3 mb-2">
                 <div className=" bg-muted rounded-lg">
@@ -206,7 +206,7 @@ export default function QuizResultsPage() {
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.8 }}
-                className="text-2xl font-bold text-foreground"
+                className="text-2xl font-bold text-foreground self-center"
               >
                 {attempted}
               </motion.p>
@@ -214,11 +214,11 @@ export default function QuizResultsPage() {
 
             <motion.div
               whileHover={{ scale: 1.02 }}
-              className="bg-card/80 rounded-2xl p-4 border border-divider"
+              className="bg-card/80 rounded-2xl p-4 border border-divider flex flex-col"
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className=" ">
-                  <Award className="w-4 h-4 text-muted text-primary-orange" />
+                <div className="bg-muted rounded-lg">
+                  <Award className="w-4 h-4 text-primary-orange" />
                 </div>
                 <span className="text-sm font-medium text-secondary-foreground">
                   Correct
@@ -228,7 +228,7 @@ export default function QuizResultsPage() {
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 1 }}
-                className="text-2xl font-bold text-foreground"
+                className="text-2xl font-bold text-foreground self-center"
               >
                 {correct}
               </motion.p>
@@ -236,7 +236,7 @@ export default function QuizResultsPage() {
 
             <motion.div
               whileHover={{ scale: 1.02 }}
-              className="bg-card/80 rounded-2xl p-4 border border-divider"
+              className="bg-card/80 rounded-2xl p-4 border border-divider flex flex-col"
             >
               <div className="flex items-center gap-3 mb-2">
                 <div className="bg-muted rounded-lg">
@@ -246,7 +246,7 @@ export default function QuizResultsPage() {
                   Accuracy
                 </span>
               </div>
-              <motion.div className="relative">
+              <motion.div className="relative self-center">
                 <AnimatePresence mode="wait">
                   <motion.p
                     key={accuracy}
@@ -264,7 +264,7 @@ export default function QuizResultsPage() {
 
             <motion.div
               whileHover={{ scale: 1.02 }}
-              className="bg-card/80 rounded-2xl p-4 border border-divider"
+              className="bg-card/80 rounded-2xl p-4 border border-divider flex flex-col"
             >
               <div className="flex items-center gap-3 mb-2">
                 <div className="bg-muted rounded-lg">
@@ -278,7 +278,7 @@ export default function QuizResultsPage() {
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 1.4 }}
-                className="text-2xl font-bold text-foreground"
+                className="text-2xl font-bold text-foreground self-center"
               >
                 {points}
               </motion.p>

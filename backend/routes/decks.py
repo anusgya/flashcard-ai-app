@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -212,6 +213,49 @@ async def delete_deck(
         )
     
     return None
+
+# Export cards to CSV
+@router.get("/{deck_id}/export/csv")
+async def export_cards_to_csv(
+    deck_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    # Verify deck belongs to user or is public
+    deck = db.query(Deck).filter(
+        Deck.id == deck_id,
+        (Deck.user_id == current_user.id) | (Deck.is_public == True)
+    ).first()
+
+    if not deck:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Deck not found or you don't have access to it"
+        )
+
+    # Get all cards for the deck
+    cards = db.query(Card).filter(Card.deck_id == deck_id).all()
+
+    # Create a string buffer to hold CSV data
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    writer.writerow(["front_content", "back_content"])
+
+    # Write card data
+    for card in cards:
+        writer.writerow([card.front_content, card.back_content])
+
+    # Move to the beginning of the buffer
+    output.seek(0)
+
+    # Return as a streaming response
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={deck.name}.csv"}
+    )
 
 # Import cards from CSV
 @router.post("/{deck_id}/import/csv", response_model=schemas.DeckResponse)

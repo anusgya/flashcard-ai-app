@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +32,56 @@ export function FloatingPomodoro() {
   } = usePomodoro();
 
   const [isExpanded, setIsExpanded] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
   const constraintsRef = useRef(null);
+
+  // Manual Drag Logic
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const nodeRef = useRef<HTMLDivElement>(null);
+  const startPos = useRef({ x: 0, y: 0 });
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setIsDragging(true);
+    if (nodeRef.current) {
+      startPos.current = {
+        x: e.clientX - position.x,
+        y: e.clientY - position.y,
+      };
+    }
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: PointerEvent) => {
+    if (isDragging) {
+      setPosition({
+        x: e.clientX - startPos.current.x,
+        y: e.clientY - startPos.current.y,
+      });
+    }
+  };
+
+  const handlePointerUp = (e: PointerEvent) => {
+    setIsDragging(false);
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", handlePointerUp);
+    }
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+  }, [isDragging]);
+  // End Manual Drag Logic
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const getDurationForCurrentMode = () => {
     switch (currentMode) {
@@ -77,27 +126,34 @@ export function FloatingPomodoro() {
   const progress = getProgress();
   const modeConfig = getModeConfig();
 
+  if (!hasMounted) {
+    return null;
+  }
+
   return (
     <>
       <div ref={constraintsRef} className="fixed inset-0 pointer-events-none" />
       <motion.div
+        ref={nodeRef}
+        onPointerDown={handlePointerDown}
         className="fixed bottom-6 right-6 z-50 cursor-grab"
-        drag
-        dragConstraints={constraintsRef}
-        dragMomentum={false}
-        whileTap={{ cursor: "grabbing" }}
-        initial={{ opacity: 0, scale: 0.8, y: 100 }}
-        animate={
-          shouldShow
-            ? { opacity: 1, scale: 1, y: 0, pointerEvents: "auto" }
-            : { opacity: 0, scale: 0.8, y: 100, pointerEvents: "none" }
-        }
-        transition={{
-          duration: 0.3,
-          type: "spring",
-          stiffness: 300,
-          damping: 30,
+        style={{
+          display: shouldShow ? "block" : "none",
         }}
+        initial={{ opacity: 0, scale: 0.8, x: 0, y: 0 }}
+        animate={{
+          opacity: 1,
+          scale: 1,
+          x: position.x,
+          y: position.y,
+        }}
+        transition={{
+          opacity: { type: "spring", stiffness: 300, damping: 30 },
+          scale: { type: "spring", stiffness: 300, damping: 30 },
+          x: { type: "just" },
+          y: { type: "just" },
+        }}
+        whileTap={{ cursor: "grabbing" }}
       >
         <div className="relative">
           {/* Enhanced background gradient blur */}
@@ -106,7 +162,7 @@ export function FloatingPomodoro() {
           ></div>
 
           <motion.div
-            className="relative bg-background backdrop-blur-md border border-border border-dotted rounded-lg  overflow-hidden"
+            className="relative bg-background backdrop-blur-md border border-border border-dotted rounded-2xl  overflow-hidden"
             animate={{
               width: isExpanded ? 320 : 150,
               height: isExpanded ? 300 : 60,
@@ -150,9 +206,9 @@ export function FloatingPomodoro() {
                     className="h-8 w-8 p-0 hover:bg-secondary rounded-full"
                   >
                     {isActive ? (
-                      <Pause className="h-4 w-4" />
+                      <Pause className="h-4 w-4 text-secondary-foreground" />
                     ) : (
-                      <Play className="h-4 w-4" />
+                      <Play className="h-4 w-4 text-secondary-foreground" />
                     )}
                   </Button>
                   {/* <Button

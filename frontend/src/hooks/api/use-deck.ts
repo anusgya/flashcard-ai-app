@@ -105,6 +105,17 @@ export async function deleteDeck(deckId: string) {
   });
 }
 
+// Export a deck to CSV
+export async function exportDeck(deckId: string) {
+  // Construct the full URL for the export endpoint
+  const exportUrl = `/api/decks/${deckId}/export/csv`;
+
+  // Use fetchWithAuth to make the request
+  return fetchWithAuth(exportUrl, {
+    method: "GET",
+  });
+}
+
 // Clone a deck
 export async function cloneDeck(deckId: string) {
   return fetchWithAuth(`/api/decks/${deckId}/clone`, {

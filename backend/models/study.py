@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, DateTime, Integer, Float, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from database import Base
 
@@ -13,12 +13,12 @@ class StudySession(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     deck_id = Column(UUID(as_uuid=True), ForeignKey("decks.id", ondelete="SET NULL"), nullable=True)
-    start_time = Column(DateTime, default=datetime.utcnow)
-    end_time = Column(DateTime, nullable=True)
+    start_time = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    end_time = Column(DateTime(timezone=True), nullable=True)
     cards_studied = Column(Integer, default=0)
     accuracy = Column(Float, default=0.0)
     points_earned = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)  # For filtering by time range
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))  # For filtering by time range
 
     # Relationships
     user = relationship("User", back_populates="study_sessions")
@@ -34,8 +34,8 @@ class StudyRecord(Base):
     card_id = Column(UUID(as_uuid=True), ForeignKey("cards.id"), nullable=False)
     response_quality = Column(String, nullable=False)  # again|hard|good|perfect
     time_taken = Column(Integer, nullable=False)  # in seconds
-    studied_at = Column(DateTime, default=datetime.utcnow)
-    next_review = Column(DateTime, nullable=True)
+    studied_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    next_review = Column(DateTime(timezone=True), nullable=True)
     confidence_level = Column(String, nullable=True)
     points_earned = Column(Integer, default=0)
     ease_factor = Column(Float, default=2.5)  # SM-2 algorithm ease factor
@@ -48,7 +48,7 @@ class StudyRecord(Base):
     
     @classmethod
     def calculate_next_review(cls, response_quality, current_ease, current_interval, repetition_number):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         if current_ease is None:
             current_ease = 2.5
@@ -71,7 +71,7 @@ class StudyRecord(Base):
                 new_interval = 1
                 new_ease = current_ease  
                 new_repetition = 1
-            else:  
+            else:  # "perfect"
                 next_review = now + timedelta(days=4) 
                 new_interval = 4
                 new_ease = current_ease
@@ -111,7 +111,7 @@ class StudyRecord(Base):
                 next_review = now + timedelta(days=new_interval)
                 new_repetition = repetition_number + 1
             
-            else:  # "easy"
+            else:  # "perfect"
                 # Increase ease by 15 percentage points
                 ease_percentage += 15
                 

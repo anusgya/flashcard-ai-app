@@ -26,6 +26,7 @@ export default function LoginPage() {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
+        credentials: "include",
         body: new URLSearchParams({
           username: email,
           password: password,
@@ -49,8 +50,8 @@ export default function LoginPage() {
           variant: "default",
         });
 
-        // Store the token
-        localStorage.setItem("token", data.access_token);
+        // The token is now handled automatically by the HttpOnly cookie.
+        // No client-side storage is needed.
 
         // Redirect to dashboard
         router.push("/dashboard");

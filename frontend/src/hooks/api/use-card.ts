@@ -99,7 +99,6 @@ export async function addCardMedia(
   return fetchWithAuth(`/api/cards/${cardId}/media`, {
     method: "POST",
     body: formData,
-    // Don't set Content-Type header when using FormData, browser will set it with boundary
   });
 }
 
@@ -109,6 +108,3 @@ export async function deleteCardMedia(cardId: string, mediaId: string) {
     method: "DELETE",
   });
 }
-
-
-

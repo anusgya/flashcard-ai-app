@@ -1,7 +1,17 @@
+"use client";
+
 import type React from "react";
+import dynamic from "next/dynamic";
 import { Navigation } from "@/components/navigation";
 import { PomodoroProvider } from "@/hooks/use-pomodoro";
-import { FloatingPomodoro } from "@/components/ui/pomodoro/floating-pomodoro";
+
+const FloatingPomodoro = dynamic(
+  () =>
+    import("@/components/ui/pomodoro/floating-pomodoro").then(
+      (mod) => mod.FloatingPomodoro
+    ),
+  { ssr: false }
+);
 
 export default function ProtectedLayout({
   children,

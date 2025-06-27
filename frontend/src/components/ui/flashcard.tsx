@@ -20,6 +20,8 @@ export interface FlashcardProps {
   backAudioUrl?: string;
   onEdit?: () => void;
   onAnswer?: (difficulty: "again" | "hard" | "good" | "perfect") => void;
+  isSubmitting?: boolean;
+  intervalPreviews?: Record<string, string> | null;
 }
 
 export function Flashcard(props: FlashcardProps) {
@@ -36,6 +38,8 @@ export function Flashcard(props: FlashcardProps) {
     backAudioUrl,
     onEdit,
     onAnswer,
+    isSubmitting,
+    intervalPreviews,
   } = props;
 
   const [isFlipped, setIsFlipped] = useState(false);
@@ -47,13 +51,13 @@ export function Flashcard(props: FlashcardProps) {
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
-    
+
     // Pause any playing audio when flipping the card
     if (frontAudioRef.current && isFrontAudioPlaying) {
       frontAudioRef.current.pause();
       setIsFrontAudioPlaying(false);
     }
-    
+
     if (backAudioRef.current && isBackAudioPlaying) {
       backAudioRef.current.pause();
       setIsBackAudioPlaying(false);
@@ -62,7 +66,7 @@ export function Flashcard(props: FlashcardProps) {
 
   const handleFrontAudioPlay = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card flip
-    
+
     if (frontAudioRef.current) {
       if (isFrontAudioPlaying) {
         frontAudioRef.current.pause();
@@ -75,7 +79,7 @@ export function Flashcard(props: FlashcardProps) {
 
   const handleBackAudioPlay = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card flip
-    
+
     if (backAudioRef.current) {
       if (isBackAudioPlaying) {
         backAudioRef.current.pause();
@@ -86,19 +90,25 @@ export function Flashcard(props: FlashcardProps) {
     }
   };
 
+  const answerButtons: ("again" | "hard" | "good" | "perfect")[] = [
+    "again",
+    "hard",
+    "good",
+    "perfect",
+  ];
+
   return (
     <div className="min-h-screen bg-background py-3 px-12">
       {/* Top navigation */}
-     
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => router.back()}
-          className="text-secondary-foreground border mb-4 border-divider rounded-full hover:text-foreground"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
 
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => router.back()}
+        className="text-secondary-foreground border mb-4 border-divider rounded-full hover:text-foreground"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </Button>
 
       {/* Card stack container */}
       <div className="flex-1 flex justify-center px-4 py-2 mt-16">
@@ -127,15 +137,15 @@ export function Flashcard(props: FlashcardProps) {
                   >
                     <Pencil className="h-4 w-4" />
                   </Button> */}
-                  
+
                   <div className="flex-1 flex flex-col items-center justify-center text-center text-lg gap-6 overflow-y-auto">
                     {question}
-                    
+
                     {/* Front image */}
                     {frontImageUrl && (
                       <div className="mt-4 w-full max-w-md mx-auto">
                         <div className="border border-divider rounded-md overflow-hidden">
-                          <Image 
+                          <Image
                             src={frontImageUrl}
                             alt="Question image"
                             width={500}
@@ -146,7 +156,7 @@ export function Flashcard(props: FlashcardProps) {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Front audio control */}
                   {frontAudioUrl && (
                     <div className="absolute bottom-4 right-4">
@@ -161,11 +171,11 @@ export function Flashcard(props: FlashcardProps) {
                           <Play className="h-4 w-4" />
                         )}
                       </Button>
-                      <audio 
-                        ref={frontAudioRef} 
-                        src={frontAudioUrl} 
+                      <audio
+                        ref={frontAudioRef}
+                        src={frontAudioUrl}
                         onEnded={() => setIsFrontAudioPlaying(false)}
-                        className="hidden" 
+                        className="hidden"
                       />
                     </div>
                   )}
@@ -215,13 +225,14 @@ export function Flashcard(props: FlashcardProps) {
                     </Button> */}
                   </div>
 
-                  <Tabs defaultValue="answer" className="h-full overflow-hidden flex flex-col">
+                  <Tabs
+                    defaultValue="answer"
+                    className="h-full overflow-hidden flex flex-col"
+                  >
                     <div onClick={(e) => e.stopPropagation()}>
                       <TabsList className="grid w-full grid-cols-5 text-secondary-foreground border border-divider">
                         <TabsTrigger value="answer">Answer</TabsTrigger>
-                        {eli5 && (
-                          <TabsTrigger value="eli5">Eli5</TabsTrigger>
-                        )}
+                        {eli5 && <TabsTrigger value="eli5">Eli5</TabsTrigger>}
                         {mnemonic && (
                           <TabsTrigger value="mnemonic">Mnemonic</TabsTrigger>
                         )}
@@ -239,7 +250,9 @@ export function Flashcard(props: FlashcardProps) {
                       className="h-[calc(100%-50px)] overflow-auto"
                       onClick={(e) => e.stopPropagation()} // Prevent flip when clicking content
                     >
-                      <div className="p-4 text-lg whitespace-pre-wrap">{answer}</div>
+                      <div className="p-4 text-lg whitespace-pre-wrap">
+                        {answer}
+                      </div>
                     </TabsContent>
 
                     {eli5 && (
@@ -249,7 +262,9 @@ export function Flashcard(props: FlashcardProps) {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="p-4 space-y-4">
-                          <div className="whitespace-pre-wrap text-lg">{eli5}</div>
+                          <div className="whitespace-pre-wrap text-lg">
+                            {eli5}
+                          </div>
                         </div>
                       </TabsContent>
                     )}
@@ -261,7 +276,9 @@ export function Flashcard(props: FlashcardProps) {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="p-4 space-y-4">
-                          <div className="whitespace-pre-wrap text-lg">{mnemonic}</div>
+                          <div className="whitespace-pre-wrap text-lg">
+                            {mnemonic}
+                          </div>
                         </div>
                       </TabsContent>
                     )}
@@ -275,10 +292,7 @@ export function Flashcard(props: FlashcardProps) {
                         <div className="p-4 space-y-4 text-lg">
                           {/* <h3 className="text-lg font-semibold">example</h3> */}
                           {example.map((example, index) => (
-                            <div
-                              key={index}
-                              className="whitespace-pre-wrap"
-                            >
+                            <div key={index} className="whitespace-pre-wrap">
                               {example}
                             </div>
                           ))}
@@ -304,7 +318,7 @@ export function Flashcard(props: FlashcardProps) {
                               />
                             </div>
                           )}
-                          
+
                           {backAudioUrl && (
                             <div className="mt-4 flex items-center gap-2">
                               <Button
@@ -321,11 +335,11 @@ export function Flashcard(props: FlashcardProps) {
                               <span className="text-sm text-secondary-foreground">
                                 Audio Recording
                               </span>
-                              <audio 
-                                ref={backAudioRef} 
-                                src={backAudioUrl} 
+                              <audio
+                                ref={backAudioRef}
+                                src={backAudioUrl}
                                 onEnded={() => setIsBackAudioPlaying(false)}
-                                className="hidden" 
+                                className="hidden"
                               />
                             </div>
                           )}
@@ -340,72 +354,29 @@ export function Flashcard(props: FlashcardProps) {
         </div>
       </div>
 
-      {/* Bottom controls */}
-      <div className="p-8 flex flex-col items-center gap-4">
-        {!isFlipped ? (
-          <Button
-            className="bg-primary-blue border-primary-blue-secondary font-semibold text-muted hover:bg-primary-blue/90"
-            onClick={handleFlip}
-          >
-            Show Answer
-          </Button>
-        ) : (
-          <>
-            {/* <div className="flex gap-4 text-sm text-secondary-foreground">
-              <span>&lt;10m</span>
-              <span>4d</span>
-              <span>1.3mo</span>
-              <span>3.1mo</span>
-            </div> */}
-            <div className="flex gap-2">
+      {/* Answer buttons - shown only when card is flipped */}
+      {isFlipped && (
+        <div className="flex justify-center gap-4 mt-6">
+          {answerButtons.map((level) => (
+            <div key={level} className="flex flex-col items-center gap-2">
+              <div className="text-sm text-secondary-foreground h-4">
+                {intervalPreviews ? intervalPreviews[level] : "..."}
+              </div>
               <Button
                 variant="outline"
-                className="hover:bg-secondary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAnswer?.("again");
+                className="capitalize w-24 border-[1.5px]"
+                onClick={() => {
+                  onAnswer?.(level);
                   setIsFlipped(false);
                 }}
+                disabled={isSubmitting}
               >
-                Again
-              </Button>
-              <Button
-                variant="outline"
-                className="hover:bg-secondary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAnswer?.("hard");
-                  setIsFlipped(false);
-                }}
-              >
-                Hard
-              </Button>
-              <Button
-                variant="outline"
-                className="hover:bg-secondary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAnswer?.("good");
-                  setIsFlipped(false);
-                }}
-              >
-                Good
-              </Button>
-              <Button
-                variant="outline"
-                className="hover:bg-secondary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAnswer?.("perfect");
-                  setIsFlipped(false);
-                }}
-              >
-                Perfect
+                {level.charAt(0).toUpperCase() + level.slice(1)}
               </Button>
             </div>
-          </>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

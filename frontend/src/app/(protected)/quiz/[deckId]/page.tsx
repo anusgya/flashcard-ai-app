@@ -197,9 +197,9 @@ export default function QuizPage(): React.ReactElement {
       setShowCorrectAnimation(false);
       setQuestionStartTime(new Date());
     } else {
-      completeQuiz();
+      completeQuiz(quizResults);
     }
-  }, [currentQuestionIndex, questionsList]);
+  }, [currentQuestionIndex, questionsList, quizResults]);
 
   useEffect(() => {
     if (isAnswerRevealed) {
@@ -211,44 +211,46 @@ export default function QuizPage(): React.ReactElement {
     }
   }, [isAnswerRevealed, handleContinue]);
 
-  const completeQuiz = useCallback(async (): Promise<void> => {
-    if (!sessionId || !startTime || !questionsList || isCompleted) return;
+  const completeQuiz = useCallback(
+    async (finalResults: QuizResults): Promise<void> => {
+      if (!sessionId || !startTime || !questionsList || isCompleted) return;
 
-    setIsCompleted(true);
-    try {
-      const attemptedCount = currentQuestionIndex + 1;
-      const accuracy: number =
-        attemptedCount > 0 ? quizResults.correct / attemptedCount : 0;
+      setIsCompleted(true);
+      try {
+        const attemptedCount = currentQuestionIndex + 1;
+        const accuracy: number =
+          attemptedCount > 0 ? finalResults.correct / attemptedCount : 0;
 
-      const sessionUpdateData: Partial<QuizSessionUpdate> = {
-        end_time: new Date().toISOString(),
-        correct_answers: quizResults.correct,
-        total_questions: attemptedCount,
-        accuracy,
-        time_taken: totalTimeTaken,
-        points_earned: quizResults.correct * 10,
-      };
+        const sessionUpdateData: Partial<QuizSessionUpdate> = {
+          end_time: new Date().toISOString(),
+          correct_answers: finalResults.correct,
+          total_questions: attemptedCount,
+          accuracy,
+          time_taken: totalTimeTaken,
+          points_earned: finalResults.correct * 10,
+        };
 
-      await updateQuizSession(sessionId as UUID, sessionUpdateData);
+        await updateQuizSession(sessionId as UUID, sessionUpdateData);
 
-      router.push(
-        `/quiz/results?sessionId=${sessionId}&deckId=${deckId}&attempted=${attemptedCount}&correct=${quizResults.correct}&points=${diamonds}`
-      );
-    } catch (error) {
-      console.error("Failed to complete quiz:", error);
-    }
-  }, [
-    sessionId,
-    startTime,
-    questionsList,
-    quizResults,
-    totalTimeTaken,
-    router,
-    currentQuestionIndex,
-    isCompleted,
-    deckId,
-    diamonds,
-  ]);
+        router.push(
+          `/quiz/results?sessionId=${sessionId}&deckId=${deckId}&attempted=${attemptedCount}&correct=${finalResults.correct}&points=${diamonds}`
+        );
+      } catch (error) {
+        console.error("Failed to complete quiz:", error);
+      }
+    },
+    [
+      sessionId,
+      startTime,
+      questionsList,
+      totalTimeTaken,
+      router,
+      currentQuestionIndex,
+      isCompleted,
+      deckId,
+      diamonds,
+    ]
+  );
 
   const handleExit = useCallback(
     async (isUnloading: boolean = false): Promise<void> => {
@@ -410,7 +412,7 @@ export default function QuizPage(): React.ReactElement {
               {currentQuestion.question_text}
             </motion.h1>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {currentQuestion.options.map((answer: string, index: number) => (
                 <AnswerButton
                   key={index}

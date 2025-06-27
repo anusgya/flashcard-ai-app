@@ -53,6 +53,9 @@ interface StudyRecordResponse extends StudyRecordCreate {
   repetition_number: number;
 }
 
+// Used for the new preview endpoint
+type IntervalPreviews = Record<"again" | "hard" | "good" | "perfect", string>;
+
 // Updated to match backend schema
 interface DueCardsResponse {
   due_now: number;
@@ -293,6 +296,13 @@ export function useNextCard(deckId: UUID | null) {
     error: error as ErrorWithResponse | null,
     mutate: fetchNext,
   };
+}
+
+// New function to fetch interval previews
+export async function getIntervalPreviews(
+  cardId: UUID
+): Promise<IntervalPreviews> {
+  return fetchWithAuth(`/api/study/preview-intervals/${cardId}`);
 }
 
 // Get overall study statistics for a deck

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 import schemas
 from models import User
+from fastapi import Cookie
 
 # Configuration
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"  # Change this in production
@@ -33,6 +34,14 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
         return None
     return user
 
+async def get_token_from_cookie(token: str = Cookie(None)):
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+    return token
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
@@ -44,7 +53,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    token: str = Depends(get_token_from_cookie),
     db: Session = Depends(get_db)
 ) -> User:
     credentials_exception = HTTPException(

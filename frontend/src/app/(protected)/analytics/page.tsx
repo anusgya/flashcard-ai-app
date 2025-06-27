@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAnalyticsDashboard, TimeRange } from "@/hooks/api/useAnalytics";
 import {
   LineChart,
@@ -33,6 +33,7 @@ import {
   Lightbulb,
   Flame,
   Info,
+  Download,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -45,6 +46,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import StatCard from "@/components/ui/stat-card";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 interface AnalyticsContentProps {
   timeRange: TimeRange;
@@ -785,9 +788,47 @@ const AnalyticsContent = ({ timeRange }: AnalyticsContentProps) => {
 const AnalyticsDashboard = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>(TimeRange.WEEK);
   const [showInsights, setShowInsights] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const dashboardRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPdf = () => {
+    if (!dashboardRef.current) return;
+    setIsExporting(true);
+    html2canvas(dashboardRef.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#0A0A0A", // Match the dark theme background
+    })
+      .then((canvas) => {
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        let heightLeft = pdfHeight;
+        let position = 0;
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft > 0) {
+          position = -heightLeft;
+          pdf.addPage();
+          pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+          heightLeft -= pageHeight;
+        }
+        pdf.save(`analytics-${timeRange}.pdf`);
+      })
+      .finally(() => {
+        setIsExporting(false);
+      });
+  };
 
   return (
-    <div className="bg-background min-h-screen py-16 px-12 font-inter relative overflow-hidden">
+    <div
+      ref={dashboardRef}
+      className="bg-background min-h-screen py-16 px-12 font-inter relative overflow-hidden"
+    >
       {/* Background decorations */}
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-b from-primary-blue/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-t from-primary-green/5 to-transparent rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
@@ -805,42 +846,54 @@ const AnalyticsDashboard = () => {
               Track your progress and optimize your learning journey
             </p>
           </div>
-          <div className="flex border border-border rounded-md divide-x divide-border">
+          <div className="flex items-center gap-4">
+            <div className="flex border border-border rounded-md divide-x divide-border">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTimeRange(TimeRange.WEEK)}
+                className={`min-w-[80px] ${
+                  timeRange === TimeRange.WEEK
+                    ? "bg-neutral-700 rounded-md"
+                    : "rounded-md hover:bg-neutral-700 hover:text-foreground"
+                }`}
+              >
+                Weekly
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTimeRange(TimeRange.MONTH)}
+                className={`min-w-[80px] ${
+                  timeRange === TimeRange.MONTH
+                    ? "bg-neutral-700 rounded-md"
+                    : "rounded-md hover:bg-neutral-700 hover:text-foreground"
+                }`}
+              >
+                Monthly
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTimeRange(TimeRange.ALL)}
+                className={`min-w-[80px] ${
+                  timeRange === TimeRange.ALL
+                    ? "bg-neutral-700 rounded-md"
+                    : "rounded-md hover:bg-neutral-700 hover:text-foreground"
+                }`}
+              >
+                All Time
+              </Button>
+            </div>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={() => setTimeRange(TimeRange.WEEK)}
-              className={`min-w-[80px] ${
-                timeRange === TimeRange.WEEK
-                  ? "bg-neutral-700 rounded-md"
-                  : "rounded-md hover:bg-neutral-700 hover:text-foreground"
-              }`}
+              onClick={handleExportPdf}
+              disabled={isExporting}
+              className="rounded-md bg-card border-2 border-divider hover:text-foreground flex items-center gap-2"
             >
-              Weekly
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setTimeRange(TimeRange.MONTH)}
-              className={`min-w-[80px] ${
-                timeRange === TimeRange.MONTH
-                  ? "bg-neutral-700 rounded-md"
-                  : "rounded-md hover:bg-neutral-700 hover:text-foreground"
-              }`}
-            >
-              Monthly
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setTimeRange(TimeRange.ALL)}
-              className={`min-w-[80px] ${
-                timeRange === TimeRange.ALL
-                  ? "bg-neutral-700 rounded-md"
-                  : "rounded-md hover:bg-neutral-700 hover:text-foreground"
-              }`}
-            >
-              All Time
+              <Download className="h-4 w-4" />
+              {/* {isExporting ? "Exporting..." : "Export PDF"} */}
             </Button>
           </div>
         </div>

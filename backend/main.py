@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from sqlalchemy import update
 
 
 # Load environment variables
@@ -32,15 +33,17 @@ app = FastAPI(
 )
 
 app.mount("/media", StaticFiles(directory="media"), name="media")
+app.mount("/avatars", StaticFiles(directory="avatars"), name="avatars")
 
 
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS", "*").split(","),
+    allow_origins=["http://localhost:3000"],  # NOT ["*"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
 )
 
 # Authentication endpoint

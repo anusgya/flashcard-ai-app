@@ -8,6 +8,7 @@ import {
   Search,
   BookCheck,
   ChevronDown,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
@@ -16,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { CardListItem } from "@/components/ui/card-list-item";
 import { useCards } from "@/hooks/api/use-card";
 import { useParams } from "next/navigation";
-import { useDeck } from "@/hooks/api/use-deck";
+import { useDeck, exportDeck } from "@/hooks/api/use-deck";
 import { motion } from "framer-motion";
 import { UploadModal } from "@/components/ui/upload-modal";
 import { ImportModal } from "@/components/ui/import-modal";
@@ -26,6 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 // Define types for the data structures
 interface Card {
@@ -66,6 +68,7 @@ type FilterOption = {
 export default function CardsPage() {
   const params = useParams<{ deckId: string }>();
   const deckId = params.deckId;
+  const { toast } = useToast();
 
   const { deck } = useDeck(deckId);
   const { cards, isLoading, isError, mutate } = useCards(deckId);
@@ -76,6 +79,38 @@ export default function CardsPage() {
   const [sortOption, setSortOption] = useState<string>("created-desc");
   // Add filter state
   const [filterOption, setFilterOption] = useState<string>("all");
+
+  const handleExport = async () => {
+    if (!deckId || !deck?.name) {
+      toast({
+        title: "Could not export deck.",
+        description: "Deck information is missing.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      const response = await exportDeck(deckId);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${deck.name}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast({
+        title: "Deck exported successfully!",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Failed to export deck:", error);
+      toast({
+        title: "Failed to export deck!",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Define sort options
   const sortOptions: SortOption[] = [
@@ -234,14 +269,25 @@ export default function CardsPage() {
             {deck?.description}
           </p>
         </div>
-        <div className="relative w-80 border-0 bg-secondary rounded-lg">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-secondary-foreground" />
-          <Input
-            className="py-[5px] pl-10 placeholder:text-secondary-foreground border border-border"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative w-80 border-0 bg-secondary rounded-lg">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-secondary-foreground" />
+            <Input
+              className="py-[5px] pl-10 placeholder:text-secondary-foreground border border-border"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            className="text-secondary-foreground border-b-1 bg-secondary border-divider hover:text-foreground"
+            title="Export deck to CSV"
+            onClick={handleExport}
+          >
+            <Download className="h-4 w-4" />
+          </Button>
         </div>
       </motion.div>
 

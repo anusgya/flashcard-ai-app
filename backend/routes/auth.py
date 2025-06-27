@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Form
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
 from fastapi.security import OAuth2PasswordRequestForm 
+from fastapi.responses import JSONResponse
 
 from database import get_db
 import schemas
@@ -20,7 +21,7 @@ router = APIRouter(
     responses={401: {"description": "Unauthorized"}}
 )
 
-@router.post("/token", response_model=schemas.Token)
+@router.post("/token")
 def login_for_access_token(
     db: Session = Depends(get_db),
     form_data: OAuth2PasswordRequestForm = Depends()
@@ -44,10 +45,25 @@ def login_for_access_token(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail=f"An unexpected error occurred: {e}",
         ) from e
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    response = JSONResponse(content={"message": "login successful"})
+    response.set_cookie(
+        key="token",
+        value=access_token,
+        httponly=True,
+        samesite='lax',
+        path='/'
+    )
+    return response
+
+
+@router.post("/logout")
+def logout():
+    response = JSONResponse(content={"message": "logout successful"})
+    response.delete_cookie(key="token", path="/", httponly=True, samesite='lax')
+    return response
 
 
 @router.post("/register", response_model=schemas.UserResponse)

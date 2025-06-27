@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from sqlalchemy import func
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 
 import models
@@ -18,6 +18,32 @@ router = APIRouter(
     dependencies=[Depends(get_current_active_user)]
 )
 
+def format_timedelta_human_readable(td: timedelta) -> str:
+    """Formats a timedelta into a human-readable string like '10m', '2d', '3mo'."""
+    seconds = int(td.total_seconds())
+    
+    if seconds < 60:
+        return "<1m"
+        
+    minutes = round(seconds / 60)
+    if minutes < 60:
+        return f"{minutes}m"
+        
+    hours = round(minutes / 60)
+    if hours < 24:
+        return f"{hours}h"
+        
+    days = round(hours / 24)
+    if days < 30:
+        return f"{days}d"
+        
+    months = round(days / 30)
+    if months < 12:
+        return f"{months}mo"
+        
+    years = round(days / 365)
+    return f"{years}y"
+
 def determine_card_state(next_review, interval, now=None):
     """
     Determine the card state based on its interval and next review date.
@@ -31,7 +57,7 @@ def determine_card_state(next_review, interval, now=None):
         CardState: The current state of the card (NEW, LEARNING, or REVIEW)
     """
     if now is None:
-        now = datetime.now(tz=UTC)
+        now = datetime.now(timezone.utc)
     
     # If next_review is None, the card is new
     if next_review is None:
@@ -132,11 +158,6 @@ def update_study_session(
     
     update_data = session_update.dict(exclude_unset=True)
 
-    # Correctly handle timezone-aware datetime from frontend
-    if 'end_time' in update_data and isinstance(update_data['end_time'], datetime):
-        # Convert aware datetime to naive UTC datetime before saving
-        update_data['end_time'] = update_data['end_time'].astimezone(UTC).replace(tzinfo=None)
-
     # Check if the session is being concluded
     is_ending = "end_time" in update_data and update_data["end_time"] is not None
 
@@ -190,7 +211,6 @@ def create_study_record(
         current_interval, 
         repetition_number
     )
-    
     # Calculate points
     points = calculate_points(record.response_quality, record.time_taken)
     
@@ -207,15 +227,18 @@ def create_study_record(
     
     # Update the card's next review date, SR data, and state
     card.next_review = next_review
+
     card.current_streak = new_repetition
     card.total_reviews = card.total_reviews + 1 if card.total_reviews else 1
     
     # Update the card state based on next review and interval
-    now = datetime.now(tz=UTC)
+    now = datetime.now(timezone.utc)
     card.card_state = determine_card_state(next_review, new_interval, now)
     
     # Update success rate based on response quality
     is_successful = record.response_quality in ["good", "perfect"]
+    print(f"Response: {record.response_quality}, Now: {now}, Next review: {next_review}")
+
     total_reviews = card.total_reviews
     if not card.success_rate:
         card.success_rate = 1.0 if is_successful else 0.0
@@ -248,7 +271,7 @@ def get_due_cards_count(
     if not deck.is_public and deck.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to access this deck")
 
-    now = datetime.now(tz=UTC)
+    now = datetime.now(timezone.utc)
     
     # Count cards by state and due status
     new_count = db.query(func.count(models.Card.id)).filter(
@@ -284,6 +307,50 @@ def get_due_cards_count(
         learning_cards=learning_count,
         review_cards=review_count
     )
+
+@router.get("/preview-intervals/{card_id}", response_model=dict)
+def get_interval_previews(
+    card_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Preview the next review intervals for a card based on all possible responses.
+    """
+    card = db.query(models.Card).filter(models.Card.id == card_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    # Verify deck access
+    deck = db.query(models.Deck).filter(models.Deck.id == card.deck_id).first()
+    if not deck.is_public and deck.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this deck")
+
+    # Get latest study record for SR parameters
+    latest_record = db.query(models.StudyRecord).filter(
+        models.StudyRecord.card_id == card_id
+    ).order_by(models.StudyRecord.studied_at.desc()).first()
+
+    current_ease = latest_record.ease_factor if latest_record else 2.5
+    current_interval = latest_record.interval if latest_record else 0
+    repetition_number = latest_record.repetition_number if latest_record else 0
+
+    now = datetime.now(timezone.utc)
+    previews = {}
+    
+    # The frontend will be updated to use "easy"
+    for quality in ["again", "hard", "good", "perfect"]:
+        next_review, _, _, _ = models.StudyRecord.calculate_next_review(
+            quality,
+            current_ease,
+            current_interval,
+            repetition_number
+        )
+        time_delta = next_review - now
+        previews[quality] = format_timedelta_human_readable(time_delta)
+    
+
+    return previews
 
 # Add a helper function to calculate points based on response quality and time
 def calculate_points(response_quality: str, time_taken: int) -> int:
@@ -393,7 +460,7 @@ def get_next_card(
     if not deck.is_public and deck.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to access this deck")
 
-    now = datetime.now(tz=UTC)
+    now = datetime.now(timezone.utc)
 
     # ✅ Priority 1: Get due LEARNING cards
     next_card = db.query(models.Card).filter(
@@ -423,10 +490,11 @@ def get_next_card(
 
     is_due = False
     if next_card.next_review is not None:
-        # Fix timezone awareness issue by ensuring both datetimes have timezone info
-        if next_card.next_review.tzinfo is None:
-            next_card.next_review = next_card.next_review.replace(tzinfo=UTC)
-        is_due = next_card.next_review <= now
+        # Ensure next_review has timezone info before comparison
+        next_review = next_card.next_review
+        if next_review.tzinfo is None:
+            next_review = next_review.replace(tzinfo=timezone.utc)
+        is_due = next_review <= now
         
     # ✅ Return the next card
     return schemas.NextCardResponse(
@@ -519,7 +587,7 @@ def list_study_sessions(
         logger = logging.getLogger(__name__)
         
         # Apply time range filter
-        now = datetime.now(tz=UTC)
+        now = datetime.now(timezone.utc)
         if time_range == TimeRange.TODAY:
             start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
             query = query.filter(models.StudySession.end_time >= start_date)
@@ -550,7 +618,7 @@ def update_all_card_states(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):
-    now = datetime.now(tz=UTC)
+    now = datetime.now(timezone.utc)
     
     # Filter by deck_id if provided
     query = db.query(models.Card)
@@ -587,109 +655,3 @@ def update_all_card_states(
         success=True,
         message=f"Updated {updated_count} card states"
     )
-
-
-
-@staticmethod
-def calculate_next_review(response_quality, current_ease, current_interval, repetition_number):
-    """
-    Implements an Anki-style modified SM-2 algorithm for spaced repetition.
-    
-    Args:
-        response_quality: String quality rating ("again", "hard", "good", "easy")
-        current_ease: Current ease factor (default 2.5)
-        current_interval: Current interval in days
-        repetition_number: How many times card has been successfully reviewed
-        
-    Returns:
-        tuple: (next_review_date, new_ease, new_interval, new_repetition)
-    """
-    now = datetime.now(tz=UTC)
-    
-    # Default ease if not set (only applies to new cards)
-    if current_ease is None:
-        current_ease = 2.5
-
-    # Convert ease from decimal to percentage points for easier adjustment
-    ease_percentage = current_ease * 100
-    
-    # Handle learning phase (repetition_number == 0)
-    if repetition_number == 0:
-        if response_quality == "again":
-            # Move back to first step
-            next_review = now + timedelta(minutes=10)
-            new_interval = 0
-            new_ease = current_ease  # Preserve ease for new cards
-            new_repetition = 0
-        elif response_quality == "hard":
-            # Stay at current step but with longer interval
-            next_review = now + timedelta(hours=1)
-            new_interval = 0
-            new_ease = current_ease  # Preserve ease for new cards
-            new_repetition = 0
-        elif response_quality == "good":
-            # Move to next step
-            next_review = now + timedelta(days=1)
-            new_interval = 1
-            new_ease = current_ease  # Preserve ease for new cards
-            new_repetition = 1
-        else:  # easy - graduate immediately
-            next_review = now + timedelta(days=4)  # Skip 1-day interval
-            new_interval = 4
-            new_ease = current_ease
-            new_repetition = 2  # Skip to second repetition
-    
-    # Handle review phase
-    else:
-        # Apply interval modifier (can be configured in deck options)
-        interval_modifier = 1.0  # Default, but could be made configurable
-        
-        if response_quality == "again":
-            # Decrease ease by 20 percentage points
-            ease_percentage = max(130, ease_percentage - 20)
-            
-            # Card goes to relearning state
-            next_review = now + timedelta(minutes=10)
-            
-            # New interval when it exits relearning (typically 20% of old interval)
-            new_interval = max(1, int(current_interval * 0.2))
-            new_repetition = 0  # Reset repetition count
-        
-        elif response_quality == "hard":
-            # Decrease ease by 15 percentage points
-            ease_percentage = max(130, ease_percentage - 15)
-            
-            # Hard interval is 1.2x current by default
-            hard_interval_factor = 1.2
-            new_interval = max(current_interval + 1, 
-                              int(current_interval * hard_interval_factor * interval_modifier))
-            next_review = now + timedelta(days=new_interval)
-            new_repetition = repetition_number + 1
-        
-        elif response_quality == "good":
-            # Ease unchanged
-            # Next interval is current interval * ease
-            new_interval = max(current_interval + 1, 
-                              int(current_interval * (ease_percentage/100) * interval_modifier))
-            next_review = now + timedelta(days=new_interval)
-            new_repetition = repetition_number + 1
-        
-        else:  # "easy"
-            # Increase ease by 15 percentage points
-            ease_percentage += 15
-            
-            # Easy bonus (typically 1.3)
-            easy_bonus = 1.3
-            new_interval = max(current_interval + 1,
-                              int(current_interval * (ease_percentage/100) * easy_bonus * interval_modifier))
-            next_review = now + timedelta(days=new_interval)
-            new_repetition = repetition_number + 1
-    
-    # Convert ease percentage back to decimal
-    new_ease = ease_percentage / 100
-    
-    # Optional: implement maximum interval cap
-    max_interval = 36500  # 100 years default, could be configurable
-    new_interval = min(new_interval, max_interval)
-    
-    return next_review, new_ease, new_interval, new_repetition

@@ -11,6 +11,7 @@ import {
   useNextCard,
   createStudyRecord,
   updateStudySession,
+  getIntervalPreviews,
 } from "@/hooks/api/useStudy";
 import { UUID } from "crypto";
 import { ResponseQuality, ConfidenceLevel } from "@/enums";
@@ -78,6 +79,13 @@ export default function LearnPage() {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeckCompleted, setIsDeckCompleted] = useState(false); // Added state for deck completion
+  const [intervalPreviews, setIntervalPreviews] = useState<Record<
+    string,
+    string
+  > | null>(null);
+  const [displayedCardDetails, setDisplayedCardDetails] = useState<Card | null>(
+    null
+  );
   const cardStartTimeRef = useRef<number | null>(null);
   const sessionIdRef = useRef<UUID | null>(null); // Ref to hold session ID for cleanup
   const sessionStatsRef = useRef({
@@ -154,19 +162,41 @@ export default function LearnPage() {
     mutate: fetchNextCard,
   } = useNextCard(sessionId ? deckId : null);
 
-  // Check for deck completion - when nextCard is null but loading is complete
-  useEffect(() => {
-    if (!isLoadingNextCard && nextCard === null) {
-      setIsDeckCompleted(true);
-    }
-  }, [nextCard, isLoadingNextCard]);
-
   // 3. Fetch Full Card Details when nextCard is available
   const {
     card: currentCardDetails,
     isLoading: isLoadingCardDetails,
     isError: isErrorCardDetails,
   } = useCard(nextCard?.card_id || "");
+
+  // Fetch interval previews when nextCard is available
+  useEffect(() => {
+    const fetchPreviews = async () => {
+      if (nextCard?.card_id) {
+        try {
+          const previews = await getIntervalPreviews(nextCard.card_id);
+          setIntervalPreviews(previews);
+        } catch (error) {
+          console.error("Failed to fetch interval previews:", error);
+        }
+      }
+    };
+    fetchPreviews();
+  }, [nextCard]);
+
+  // When card details are fetched, update the card that is displayed
+  useEffect(() => {
+    if (currentCardDetails) {
+      setDisplayedCardDetails(currentCardDetails);
+    }
+  }, [currentCardDetails]);
+
+  // Check for deck completion - when nextCard is null but loading is complete
+  useEffect(() => {
+    if (!isLoadingNextCard && nextCard === null) {
+      setIsDeckCompleted(true);
+    }
+  }, [nextCard, isLoadingNextCard]);
 
   // 4. Fetch LLM responses for the current card
   const {
@@ -228,7 +258,8 @@ export default function LearnPage() {
       }
       sessionStatsRef.current.points_earned += record.points_earned;
 
-      // Try to fetch the next card
+      // Clear previews and fetch the next card
+      setIntervalPreviews(null);
       await fetchNextCard();
 
       cardStartTimeRef.current = null; // Reset timer ref for the next card
@@ -238,6 +269,10 @@ export default function LearnPage() {
       setIsSubmitting(false);
     }
   };
+
+  // Combine all loading states for a smoother transition
+  const isTransitioning =
+    isSubmitting || isLoadingNextCard || isLoadingCardDetails;
 
   // --- Loading and Error States ---
   if (isSessionLoading) {
@@ -260,18 +295,18 @@ export default function LearnPage() {
     );
   }
 
-  // Show loading for the *next* card fetch FIRST
-  if (isLoadingNextCard) {
+  // Only show the full-page loader for the VERY FIRST card.
+  // After that, the loader will be an overlay.
+  if (!displayedCardDetails && isTransitioning) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin mr-2" /> Loading next card...
+        <Loader2 className="h-8 w-8 animate-spin mr-2" /> Loading first card...
       </div>
     );
   }
 
-  // THEN, check for completion *after* next card loading is done
-  // Using isDeckCompleted state which is set when nextCard is null
-  if (isDeckCompleted || !nextCard) {
+  // Deck completion state
+  if (isDeckCompleted || (!nextCard && !isTransitioning)) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4">
         <h2 className="text-2xl font-semibold text-foreground">
@@ -291,33 +326,20 @@ export default function LearnPage() {
     );
   }
 
-  // --- If we have a nextCard, proceed to load its details ---
-
-  // Now handle loading for the specific card's details
-  if (isLoadingCardDetails) {
+  // Handle case where we have no card to display
+  if (!displayedCardDetails) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin mr-2" /> Loading card
-        details...
-      </div>
-    );
-  }
-
-  // Handle error loading card details OR if details are unexpectedly null/undefined
-  if (isErrorCardDetails || !currentCardDetails) {
-    console.error(
-      "Error loading card details or card details are null/undefined",
-      { isError: isErrorCardDetails, details: currentCardDetails }
-    );
-    return (
-      <div className="flex justify-center items-center h-screen text-red-500">
-        Error loading card details. Please try again or return to decks.
+      <div className="flex flex-col items-center justify-center h-screen text-red-500">
+        Could not load the next card. Please try returning to the deck list.
+        <Button onClick={() => router.back()} className="mt-4">
+          Go Back
+        </Button>
       </div>
     );
   }
 
   // --- Prepare Flashcard Props (only if card details are valid and loaded) ---
-  const currentCard = currentCardDetails as Card;
+  const currentCard = displayedCardDetails as Card;
 
   const frontMedia =
     currentCard.media?.filter((m) => m.side.toLowerCase() === "front") || [];
@@ -354,16 +376,17 @@ export default function LearnPage() {
     backImageUrl: formatMediaUrl(backImage),
     backAudioUrl: formatMediaUrl(backAudio),
     onAnswer: handleAnswer,
-    isSubmitting: isSubmitting,
+    isSubmitting: isTransitioning,
+    intervalPreviews: intervalPreviews,
   };
 
   return (
     <div className="flex flex-col h-screen">
       {/* Render Flashcard with loading overlay during submission */}
       <div className="relative flex-1">
-        {isSubmitting && (
+        {isTransitioning && (
           <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
-            <Loader2 className="h-8 w-8 animate-spin text-primary-green" />
+            {/* <Loader2 className="h-8 w-8 animate-spin text-foreground" /> */}
           </div>
         )}
         <Flashcard {...flashcardProps} />

@@ -412,4 +412,3 @@ async def get_user_quiz_stats(
 ):
     # Implementation for getting user's quiz stats for a specific deck
     pass
-
